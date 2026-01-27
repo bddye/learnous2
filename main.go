@@ -13,6 +13,7 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
+// main 是程序的入口函数
 func main() {
 	logger.SetFlags(logger.Lshortfile)
 
@@ -64,9 +65,8 @@ func main() {
 	}
 }
 
-// loadConfiguration will load in the user's configuration.
-// It will either load the alpha configuration (if alphaConfig is given)
-// or the legacy configuration.
+// loadConfiguration 加载用户配置。
+// 它将加载 alpha 配置（如果提供了 alphaConfig）或者旧版配置。
 func loadConfiguration(config, yamlConfig string, extraFlags *pflag.FlagSet, args []string) (*options.Options, error) {
 	opts, err := loadLegacyOptions(config, extraFlags, args)
 	if err != nil {
@@ -86,8 +86,7 @@ func loadConfiguration(config, yamlConfig string, extraFlags *pflag.FlagSet, arg
 	return opts, nil
 }
 
-// loadLegacyOptions loads the old toml options using the legacy flagset
-// and legacy options struct.
+// loadLegacyOptions 使用旧版标志集和旧版选项结构体加载旧的 toml 选项。
 func loadLegacyOptions(config string, extraFlags *pflag.FlagSet, args []string) (*options.Options, error) {
 	optionsFlagSet := options.NewLegacyFlagSet()
 	optionsFlagSet.AddFlagSet(extraFlags)
@@ -108,9 +107,8 @@ func loadLegacyOptions(config string, extraFlags *pflag.FlagSet, args []string) 
 	return opts, nil
 }
 
-// loadYamlOptions loads the old style config excluding options converted to
-// the new alpha format, then merges the alpha options, loaded from YAML,
-// into the core configuration.
+// loadYamlOptions 加载不包括已转换为新 alpha 格式的选项的旧式配置，
+// 然后将从 YAML 加载的 alpha 选项合并到核心配置中。
 func loadYamlOptions(yamlConfig, config string, extraFlags *pflag.FlagSet, args []string) (*options.Options, error) {
 	opts, err := loadOptions(config, extraFlags, args)
 	if err != nil {
@@ -126,10 +124,8 @@ func loadYamlOptions(yamlConfig, config string, extraFlags *pflag.FlagSet, args 
 	return opts, nil
 }
 
-// loadOptions loads the configuration using the old style format into the
-// core options.Options struct.
-// This means that none of the options that have been converted to alpha config
-// will be loaded using this method.
+// loadOptions 使用旧式格式将配置加载到核心 options.Options 结构体中。
+// 这意味着任何已转换为 alpha 配置的选项都不会通过此方法加载。
 func loadOptions(config string, extraFlags *pflag.FlagSet, args []string) (*options.Options, error) {
 	optionsFlagSet := options.NewFlagSet()
 	optionsFlagSet.AddFlagSet(extraFlags)
@@ -145,8 +141,7 @@ func loadOptions(config string, extraFlags *pflag.FlagSet, args []string) (*opti
 	return opts, nil
 }
 
-// printConvertedConfig extracts alpha options from the loaded configuration
-// and renders these to stdout in YAML format.
+// printConvertedConfig 从加载的配置中提取 alpha 选项，并将其以 YAML 格式渲染到标准输出。
 func printConvertedConfig(opts *options.Options) error {
 	alphaConfig := options.NewAlphaOptions(opts)
 

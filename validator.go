@@ -18,9 +18,9 @@ type UserMap struct {
 	m         unsafe.Pointer
 }
 
-// NewUserMap parses the authenticated emails file into a new UserMap
+// NewUserMap 将已验证的电子邮件文件解析为新的 UserMap。
 //
-// TODO (@NickMeves): Audit usage of `unsafe.Pointer` and potentially refactor
+// TODO (@NickMeves): 审计 `unsafe.Pointer` 的使用并可能进行重构。
 func NewUserMap(usersFile string, done <-chan bool, onUpdate func()) *UserMap {
 	um := &UserMap{usersFile: usersFile}
 	m := make(map[string]bool)
@@ -36,15 +36,14 @@ func NewUserMap(usersFile string, done <-chan bool, onUpdate func()) *UserMap {
 	return um
 }
 
-// IsValid checks if an email is allowed
+// IsValid 检查电子邮件是否被允许。
 func (um *UserMap) IsValid(email string) (result bool) {
 	m := *(*map[string]bool)(atomic.LoadPointer(&um.m))
 	_, result = m[email]
 	return
 }
 
-// LoadAuthenticatedEmailsFile loads the authenticated emails file from disk
-// and parses the contents as CSV
+// LoadAuthenticatedEmailsFile 从磁盘加载已验证的电子邮件文件，并将内容解析为 CSV。
 func (um *UserMap) LoadAuthenticatedEmailsFile() {
 	r, err := os.Open(um.usersFile)
 	if err != nil {
@@ -73,6 +72,7 @@ func (um *UserMap) LoadAuthenticatedEmailsFile() {
 	atomic.StorePointer(&um.m, unsafe.Pointer(&updated)) // #nosec G103
 }
 
+// newValidatorImpl 内部实现，构建一个验证电子邮件地址的函数。
 func newValidatorImpl(domains []string, usersFile string,
 	done <-chan bool, onUpdate func()) func(string) bool {
 	validUsers := NewUserMap(usersFile, done, onUpdate)
@@ -103,12 +103,12 @@ func newValidatorImpl(domains []string, usersFile string,
 	return validator
 }
 
-// NewValidator constructs a function to validate email addresses
+// NewValidator 构建一个用于验证电子邮件地址的函数。
 func NewValidator(domains []string, usersFile string) func(string) bool {
 	return newValidatorImpl(domains, usersFile, nil, func() {})
 }
 
-// isEmailValidWithDomains checks if the authenticated email is validated against the provided domain
+// isEmailValidWithDomains 检查已验证的电子邮件是否针对提供的域名进行了验证。
 func isEmailValidWithDomains(email string, allowedDomains []string) bool {
 	for _, domain := range allowedDomains {
 		// allow if the domain is perfect suffix match with the email

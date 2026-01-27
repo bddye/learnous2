@@ -116,7 +116,7 @@ type OAuthProxy struct {
 	encodeState bool
 }
 
-// NewOAuthProxy creates a new instance of OAuthProxy from the options provided
+// NewOAuthProxy 根据提供的选项创建一个新的 OAuthProxy 实例。
 func NewOAuthProxy(opts *options.Options, validator func(string) bool) (*OAuthProxy, error) {
 	sessionStore, err := sessions.NewSessionStore(&opts.Session, &opts.Cookie)
 	if err != nil {
@@ -258,6 +258,7 @@ func NewOAuthProxy(opts *options.Options, validator func(string) bool) (*OAuthPr
 	return p, nil
 }
 
+// Start 启动 OAuth2 Proxy 服务器。
 func (p *OAuthProxy) Start() error {
 	if p.server == nil {
 		// We have to call setupServer before Start is called.
@@ -789,7 +790,7 @@ func (p *OAuthProxy) backendLogout(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// OAuthStart starts the OAuth2 authentication flow
+// OAuthStart 启动 OAuth2 身份验证流程。
 func (p *OAuthProxy) OAuthStart(rw http.ResponseWriter, req *http.Request) {
 	// start the flow permitting login URL query parameters to be overridden from the request URL
 	p.doOAuthStart(rw, req, req.URL.Query())
@@ -853,8 +854,7 @@ func (p *OAuthProxy) doOAuthStart(rw http.ResponseWriter, req *http.Request, ove
 	http.Redirect(rw, req, loginURL, http.StatusFound)
 }
 
-// OAuthCallback is the OAuth2 authentication flow callback that finishes the
-// OAuth2 authentication flow
+// OAuthCallback 是 OAuth2 身份验证流程的回调，用于完成 OAuth2 身份验证流程。
 func (p *OAuthProxy) OAuthCallback(rw http.ResponseWriter, req *http.Request) {
 	remoteAddr := ip.GetClientString(p.realClientIPParser, req, true)
 
@@ -1007,8 +1007,7 @@ func (p *OAuthProxy) AuthOnly(rw http.ResponseWriter, req *http.Request) {
 	})).ServeHTTP(rw, req)
 }
 
-// Proxy proxies the user request if the user is authenticated else it prompts
-// them to authenticate
+// Proxy 如果用户已通过身份验证则代理用户请求，否则提示他们进行身份验证。
 func (p *OAuthProxy) Proxy(rw http.ResponseWriter, req *http.Request) {
 	session, err := p.getAuthenticatedSession(rw, req)
 	switch err {
