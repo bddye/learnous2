@@ -18,8 +18,7 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/util/ptr"
 )
 
-// Validate checks that required options are set and validates those that they
-// are of the correct format
+// Validate 检查是否设置了必需的选项，并验证这些选项的格式是否正确
 func Validate(o *options.Options) error {
 	msgs := validateCookie(o.Cookie)
 	msgs = append(msgs, validateSessionCookieMinimal(o)...)
@@ -53,7 +52,7 @@ func Validate(o *options.Options) error {
 	}
 
 	if o.SkipJwtBearerTokens {
-		// Configure extra issuers
+		// 配置额外的发行者
 		if len(o.ExtraJwtIssuers) > 0 {
 			var jwtIssuers []jwtIssuer
 			jwtIssuers, msgs = parseJwtIssuers(o.ExtraJwtIssuers, msgs)
@@ -87,13 +86,13 @@ func Validate(o *options.Options) error {
 		}
 		o.SetRealClientIPParser(parser)
 
-		// Allow the logger to get client IPs
+		// 允许记录器获取客户端 IP
 		logger.SetGetClientFunc(func(r *http.Request) string {
 			return ip.GetClientString(o.GetRealClientIPParser(), r, false)
 		})
 	}
 
-	// Do this after ReverseProxy validation for TrustedIP coordinated checks
+	// 在 ReverseProxy 验证之后执行此操作，以便进行 TrustedIP 协调检查
 	msgs = append(msgs, validateAllowlists(o)...)
 
 	if len(msgs) != 0 {
@@ -125,8 +124,7 @@ func parseSignatureKey(o *options.Options, msgs []string) []string {
 	return msgs
 }
 
-// parseJwtIssuers takes in an array of strings in the form of issuer=audience
-// and parses to an array of jwtIssuer structs.
+// parseJwtIssuers 接收 issuer=audience 形式的字符串数组，并解析为 jwtIssuer 结构体数组。
 func parseJwtIssuers(issuers []string, msgs []string) ([]jwtIssuer, []string) {
 	parsedIssuers := make([]jwtIssuer, 0, len(issuers))
 	for _, jwtVerifier := range issuers {
@@ -141,8 +139,7 @@ func parseJwtIssuers(issuers []string, msgs []string) ([]jwtIssuer, []string) {
 	return parsedIssuers, msgs
 }
 
-// newVerifierFromJwtIssuer takes in issuer information in jwtIssuer info and returns
-// a verifier for that issuer.
+// newVerifierFromJwtIssuer 接收 jwtIssuer 中的发行者信息并返回该发行者的验证器。
 func newVerifierFromJwtIssuer(audienceClaims []string, extraAudiences []string, jwtIssuer jwtIssuer) (internaloidc.IDTokenVerifier, error) {
 	pvOpts := internaloidc.ProviderVerifierOptions{
 		AudienceClaims: audienceClaims,
@@ -153,7 +150,7 @@ func newVerifierFromJwtIssuer(audienceClaims []string, extraAudiences []string, 
 
 	pv, err := internaloidc.NewProviderVerifier(context.TODO(), pvOpts)
 	if err != nil {
-		// If the discovery didn't work, try again without discovery
+		// 如果发现机制不起作用，请在没有发现的情况下重试
 		pvOpts.JWKsURL = strings.TrimSuffix(jwtIssuer.issuerURI, "/") + "/.well-known/jwks.json"
 		pvOpts.SkipDiscovery = true
 
@@ -166,7 +163,7 @@ func newVerifierFromJwtIssuer(audienceClaims []string, extraAudiences []string, 
 	return pv.Verifier(), nil
 }
 
-// jwtIssuer hold parsed JWT issuer info that's used to construct a verifier.
+// jwtIssuer 保存用于构造验证器的解析后的 JWT 发行者信息。
 type jwtIssuer struct {
 	issuerURI string
 	audience  string

@@ -12,7 +12,7 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/watcher"
 )
 
-// UserMap holds information from the authenticated emails file
+// UserMap 保存来自已验证电子邮件文件的信息
 type UserMap struct {
 	usersFile string
 	m         unsafe.Pointer
@@ -111,13 +111,12 @@ func NewValidator(domains []string, usersFile string) func(string) bool {
 // isEmailValidWithDomains 检查已验证的电子邮件是否针对提供的域名进行了验证。
 func isEmailValidWithDomains(email string, allowedDomains []string) bool {
 	for _, domain := range allowedDomains {
-		// allow if the domain is perfect suffix match with the email
+		// 如果域名与电子邮件完美后缀匹配，则允许
 		if strings.HasSuffix(email, "@"+domain) {
 			return true
 		}
 
-		// allow if the domain is prefixed with . or *. and
-		// the last element (split on @) has the suffix as the domain
+		// 如果域名以 . 或 *. 为前缀，且最后一个元素（以 @ 分割）以该域名为后缀，则允许
 		atoms := strings.Split(email, "@")
 
 		if (strings.HasPrefix(domain, ".") && strings.HasSuffix(atoms[len(atoms)-1], domain)) ||

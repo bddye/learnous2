@@ -19,8 +19,7 @@ func main() {
 
 	configFlagSet := pflag.NewFlagSet("oauth2-proxy", pflag.ContinueOnError)
 
-	// Because we parse early to determine alpha vs legacy config, we have to
-	// ignore any unknown flags for now
+	// 因为我们提前进行解析以确定是 alpha 还是旧版配置，所以目前必须忽略任何未知的标志
 	configFlagSet.ParseErrorsAllowlist.UnknownFlags = true
 
 	config := configFlagSet.String("config", "", "path to config file")
@@ -81,7 +80,7 @@ func loadConfiguration(config, yamlConfig string, extraFlags *pflag.FlagSet, arg
 		}
 	}
 
-	// Ensure defaults after loading configuration
+	// 加载配置后确保设置默认值
 	opts.EnsureDefaults()
 	return opts, nil
 }
@@ -145,7 +144,7 @@ func loadOptions(config string, extraFlags *pflag.FlagSet, args []string) (*opti
 func printConvertedConfig(opts *options.Options) error {
 	alphaConfig := options.NewAlphaOptions(opts)
 
-	// Generic interface for loading arbitrary yaml structure
+	// 用于加载任意 YAML 结构的通用接口
 	var buffer map[string]interface{}
 
 	if err := options.Decode(alphaConfig, &buffer); err != nil {

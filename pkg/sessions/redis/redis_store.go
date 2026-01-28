@@ -15,14 +15,12 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// SessionStore is an implementation of the persistence.Store
-// interface that stores sessions in redis
+// SessionStore 是 persistence.Store 接口的一个实现，它在 Redis 中存储会话
 type SessionStore struct {
 	Client Client
 }
 
-// NewRedisSessionStore initialises a new instance of the SessionStore and wraps
-// it in a persistence.Manager
+// NewRedisSessionStore 初始化 SessionStore 的新实例，并将其包装在 persistence.Manager 中
 func NewRedisSessionStore(opts *options.SessionOptions, cookieOpts *options.Cookie) (sessions.SessionStore, error) {
 	client, err := NewRedisClient(opts.Redis)
 	if err != nil {
@@ -35,8 +33,7 @@ func NewRedisSessionStore(opts *options.SessionOptions, cookieOpts *options.Cook
 	return persistence.NewManager(rs, cookieOpts), nil
 }
 
-// Save takes a sessions.SessionState and stores the information from it
-// to redis, and adds a new persistence cookie on the HTTP response writer
+// Save 获取 sessions.SessionState 并将其中的信息存储到 Redis 中，并在 HTTP 响应写入器上添加一个新的持久化 Cookie
 func (store *SessionStore) Save(ctx context.Context, key string, value []byte, exp time.Duration) error {
 	err := store.Client.Set(ctx, key, value, exp)
 	if err != nil {
@@ -45,8 +42,7 @@ func (store *SessionStore) Save(ctx context.Context, key string, value []byte, e
 	return nil
 }
 
-// Load reads sessions.SessionState information from a persistence
-// cookie within the HTTP request object
+// Load 从 HTTP 请求对象中的持久化 Cookie 中读取 sessions.SessionState 信息
 func (store *SessionStore) Load(ctx context.Context, key string) ([]byte, error) {
 	value, err := store.Client.Get(ctx, key)
 	if err == redis.Nil {
@@ -58,8 +54,7 @@ func (store *SessionStore) Load(ctx context.Context, key string) ([]byte, error)
 	return value, nil
 }
 
-// Clear clears any saved session information for a given persistence cookie
-// from redis, and then clears the session
+// Clear 从 Redis 中清除给定持久化 Cookie 的任何已保存会话信息，然后清除该会话
 func (store *SessionStore) Clear(ctx context.Context, key string) error {
 	err := store.Client.Del(ctx, key)
 	if err != nil {
@@ -68,19 +63,17 @@ func (store *SessionStore) Clear(ctx context.Context, key string) error {
 	return nil
 }
 
-// Lock creates a lock object for sessions.SessionState
+// Lock 为 sessions.SessionState 创建一个锁对象
 func (store *SessionStore) Lock(key string) sessions.Lock {
 	return store.Client.Lock(key)
 }
 
-// VerifyConnection verifies the redis connection is valid and the
-// server is responsive
+// VerifyConnection 验证 Redis 连接是否有效且服务器是否有响应
 func (store *SessionStore) VerifyConnection(ctx context.Context) error {
 	return store.Client.Ping(ctx)
 }
 
-// NewRedisClient makes a redis.Client (either standalone, sentinel aware, or
-// redis cluster)
+// NewRedisClient 创建一个 redis.Client（独立运行、哨兵模式或 Redis 集群）
 func NewRedisClient(opts options.RedisStoreOptions) (Client, error) {
 	if opts.UseSentinel && opts.UseCluster {
 		return nil, fmt.Errorf("options redis-use-sentinel and redis-use-cluster are mutually exclusive")
@@ -95,8 +88,7 @@ func NewRedisClient(opts options.RedisStoreOptions) (Client, error) {
 	return buildStandaloneClient(opts)
 }
 
-// buildSentinelClient makes a redis.Client that connects to Redis Sentinel
-// for Primary/Replica Redis node coordination
+// buildSentinelClient 创建一个连接到 Redis 哨兵以进行主从 Redis 节点协调的 redis.Client
 func buildSentinelClient(opts options.RedisStoreOptions) (Client, error) {
 	addrs, opt, err := parseRedisURLs(opts.SentinelConnectionURLs)
 	if err != nil {
@@ -126,7 +118,7 @@ func buildSentinelClient(opts options.RedisStoreOptions) (Client, error) {
 	return newClient(client), nil
 }
 
-// buildClusterClient makes a redis.Client that is Redis Cluster aware
+// buildClusterClient 创建一个支持 Redis 集群的 redis.Client
 func buildClusterClient(opts options.RedisStoreOptions) (Client, error) {
 	addrs, opt, err := parseRedisURLs(opts.ClusterConnectionURLs)
 	if err != nil {
@@ -154,8 +146,7 @@ func buildClusterClient(opts options.RedisStoreOptions) (Client, error) {
 	return newClusterClient(client), nil
 }
 
-// buildStandaloneClient makes a redis.Client that connects to a simple
-// Redis node
+// buildStandaloneClient 创建一个连接到简单 Redis 节点的 redis.Client
 func buildStandaloneClient(opts options.RedisStoreOptions) (Client, error) {
 	opt, err := redis.ParseURL(opts.ConnectionURL)
 	if err != nil {
@@ -179,7 +170,7 @@ func buildStandaloneClient(opts options.RedisStoreOptions) (Client, error) {
 	return newClient(client), nil
 }
 
-// setupTLSConfig sets the TLSConfig if the TLS option is given in redis.Options
+// setupTLSConfig 如果在 redis.Options 中提供了 TLS 选项，则设置 TLSConfig
 func setupTLSConfig(opts options.RedisStoreOptions, opt *redis.Options) error {
 	if opts.InsecureSkipTLSVerify {
 		if opt.TLSConfig == nil {
@@ -203,9 +194,9 @@ func setupTLSConfig(opts options.RedisStoreOptions, opt *redis.Options) error {
 			return fmt.Errorf("failed to load %q, %v", opts.CAPath, err)
 		}
 
-		// Append our cert to the system pool
+		// 将我们的证书追加到系统池中
 		if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-			logger.Errorf("no certs appended, using system certs only")
+			logger.Errorf("未追加任何证书，仅使用系统证书")
 		}
 
 		if opt.TLSConfig == nil {
@@ -218,8 +209,7 @@ func setupTLSConfig(opts options.RedisStoreOptions, opt *redis.Options) error {
 	return nil
 }
 
-// parseRedisURLs parses a list of redis urls and returns a list
-// of addresses in the form of host:port and redis.Options that can be used to connect to Redis
+// parseRedisURLs 解析 Redis URL 列表并返回 host:port 形式的地址列表以及可用于连接 Redis 的 redis.Options
 func parseRedisURLs(urls []string) ([]string, *redis.Options, error) {
 	if len(urls) == 0 {
 		return nil, nil, fmt.Errorf("unable to parse redis urls: no redis urls provided")

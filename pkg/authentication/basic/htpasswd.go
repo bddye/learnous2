@@ -15,19 +15,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// htpasswdMap represents the structure of an htpasswd file.
-// Passwords must be generated with -B for bcrypt or -s for SHA1.
+// htpasswdMap 表示 htpasswd 文件的结构。
+// 密码必须使用 -B 生成 bcrypt 格式，或使用 -s 生成 SHA1 格式。
 type htpasswdMap struct {
 	users map[string]interface{}
 	rwm   sync.RWMutex
 }
 
-// bcryptPass is used to identify bcrypt passwords in the
-// htpasswdMap users.
+// bcryptPass 用于标识 htpasswdMap 用户中的 bcrypt 密码。
 type bcryptPass string
 
-// sha1Pass os used to identify sha1 passwords in the
-// htpasswdMap users.
+// sha1Pass 用于标识 htpasswdMap 用户中的 sha1 密码。
 type sha1Pass string
 
 // NewHTPasswdValidator constructs an httpasswd based validator from the file
@@ -92,8 +90,7 @@ func createHtpasswdMap(records [][]string) (*htpasswdMap, error) {
 	h := &htpasswdMap{users: make(map[string]interface{})}
 	var invalidRecords, invalidEntries []string
 	for _, record := range records {
-		// If a record is invalid or malformed don't panic with index out of range,
-		// return a formatted error.
+		// 如果记录无效或格式错误，不要因索引超出范围而引发 panic，而是返回格式化的错误。
 		lr := len(record)
 		switch {
 		case lr == 2:
@@ -159,7 +156,7 @@ func (h *htpasswdMap) Validate(user string, password string) bool {
 
 	switch rp := realPassword.(type) {
 	case sha1Pass:
-		// We support SHA1 HTPasswd entries
+		// 我们支持 SHA1 HTPasswd 条目
 		d := sha1.New() // #nosec G401
 		_, err := d.Write([]byte(password))
 		if err != nil {

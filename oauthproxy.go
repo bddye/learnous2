@@ -57,17 +57,17 @@ const (
 )
 
 var (
-	// ErrNeedsLogin means the user should be redirected to the login page
+	// ErrNeedsLogin 表示用户应被重定向到登录页面
 	ErrNeedsLogin = errors.New("redirect to login page")
 
-	// ErrAccessDenied means the user should receive a 401 Unauthorized response
+	// ErrAccessDenied 表示用户应收到 401 未授权响应
 	ErrAccessDenied = errors.New("access denied")
 
 	//go:embed static/*
 	staticFiles embed.FS
 )
 
-// allowedRoute manages method + path based allowlists
+// allowedRoute 管理基于方法 + 路径的允许列表
 type allowedRoute struct {
 	method    string
 	negate    bool
@@ -78,7 +78,7 @@ type apiRoute struct {
 	pathRegex *regexp.Regexp
 }
 
-// OAuthProxy is the main authentication proxy
+// OAuthProxy 是主要的身份验证代理
 type OAuthProxy struct {
 	CookieOptions *options.Cookie
 	Validator     func(string) bool
@@ -268,12 +268,12 @@ func (p *OAuthProxy) Start() error {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	// Observe signals in background goroutine.
+	// 在后台 goroutine 中观察信号
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt, syscall.SIGTERM)
 		<-sigint
-		cancel() // cancel the context
+		cancel() // 取消上下文
 	}()
 
 	return p.server.Start(ctx)
@@ -373,8 +373,7 @@ func buildPreAuthChain(opts *options.Options, sessionStore sessionsapi.SessionSt
 		healthCheckUserAgents = append(healthCheckUserAgents, "GoogleHC/1.0")
 	}
 
-	// To silence logging of health checks, register the health check handler before
-	// the logging handler
+	// 为了使健康检查的日志保持静默，在日志处理程序之前注册健康检查处理程序
 	if opts.Logging.SilencePing {
 		chain = chain.Append(
 			middleware.NewHealthCheck(healthCheckPaths, healthCheckUserAgents),
@@ -792,7 +791,7 @@ func (p *OAuthProxy) backendLogout(rw http.ResponseWriter, req *http.Request) {
 
 // OAuthStart 启动 OAuth2 身份验证流程。
 func (p *OAuthProxy) OAuthStart(rw http.ResponseWriter, req *http.Request) {
-	// start the flow permitting login URL query parameters to be overridden from the request URL
+	// 启动流程，允许从请求 URL 覆盖登录 URL 查询参数
 	p.doOAuthStart(rw, req, req.URL.Query())
 }
 
@@ -858,7 +857,7 @@ func (p *OAuthProxy) doOAuthStart(rw http.ResponseWriter, req *http.Request, ove
 func (p *OAuthProxy) OAuthCallback(rw http.ResponseWriter, req *http.Request) {
 	remoteAddr := ip.GetClientString(p.realClientIPParser, req, true)
 
-	// finish the oauth cycle
+	// 完成 OAuth 周期
 	err := req.ParseForm()
 	if err != nil {
 		logger.Errorf("Error while parsing OAuth2 callback: %v", err)
@@ -881,9 +880,9 @@ func (p *OAuthProxy) OAuthCallback(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// calculate the cookie name
+	// 计算 Cookie 名称
 	cookieName := cookies.GenerateCookieName(p.CookieOptions, nonce)
-	// Try to find the CSRF cookie and decode it
+	// 尝试查找 CSRF Cookie 并对其进行解码
 	csrf, err := cookies.LoadCSRFCookie(req, cookieName, p.CookieOptions)
 	if err != nil {
 		// There are a lot of issues opened complaining about missing CSRF cookies.
@@ -927,7 +926,7 @@ func (p *OAuthProxy) OAuthCallback(rw http.ResponseWriter, req *http.Request) {
 		appRedirect = "/"
 	}
 
-	// set cookie, or deny
+	// 设置 Cookie 或拒绝
 	authorized, err := p.provider.Authorize(req.Context(), session)
 	if err != nil {
 		logger.Errorf("Error with authorization: %v", err)
@@ -959,7 +958,7 @@ func (p *OAuthProxy) redeemCode(req *http.Request, codeVerifier string) (*sessio
 		return nil, err
 	}
 
-	// Force setting these in case the Provider didn't
+	// 以防提供者没有设置，强制设置这些
 	if s.CreatedAt == nil {
 		s.CreatedAtNow()
 	}
@@ -1000,7 +999,7 @@ func (p *OAuthProxy) AuthOnly(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// we are authenticated
+	// 我们已通过身份验证
 	p.addHeadersForProxying(rw, session)
 	p.headersChain.Then(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusAccepted)
@@ -1023,19 +1022,18 @@ func (p *OAuthProxy) Proxy(rw http.ResponseWriter, req *http.Request) {
 		p.addHeadersForProxying(rw, session)
 		p.headersChain.Then(p.upstreamProxy).ServeHTTP(rw, req)
 	case ErrNeedsLogin:
-		// we need to send the user to a login screen
+		// 我们需要将用户发送到登录屏幕
 		if p.forceJSONErrors || isAjax(req) || p.isAPIPath(req) {
 			logger.Printf("No valid authentication in request. Access Denied.")
-			// no point redirecting an AJAX request
+			// 重定向 AJAX 请求没有意义
 			p.errorJSON(rw, http.StatusUnauthorized)
 			return
 		}
 
 		logger.Printf("No valid authentication in request. Initiating login.")
 		if p.SkipProviderButton {
-			// start OAuth flow, but only with the default login URL params - do not
-			// consider this request's query params as potential overrides, since
-			// the user did not explicitly start the login flow
+			// 启动 OAuth 流程，但仅使用默认的登录 URL 参数 - 不要将此请求的查询参数视为潜在的覆盖，
+			// 因为用户没有明确启动登录流程
 			p.doOAuthStart(rw, req, nil)
 		} else {
 			p.SignInPage(rw, req, http.StatusForbidden)
@@ -1049,7 +1047,7 @@ func (p *OAuthProxy) Proxy(rw http.ResponseWriter, req *http.Request) {
 		}
 
 	default:
-		// unknown error
+		// 未知错误
 		logger.Errorf("Unexpected internal error: %v", err)
 		p.ErrorPage(rw, req, http.StatusInternalServerError, err.Error())
 	}
@@ -1064,7 +1062,7 @@ var noCacheHeaders = map[string]string{
 
 // prepareNoCache prepares headers for preventing browser caching.
 func prepareNoCache(w http.ResponseWriter) {
-	// Set NoCache headers
+	// 设置 NoCache 标头
 	for k, v := range noCacheHeaders {
 		w.Header().Set(k, v)
 	}
@@ -1081,23 +1079,23 @@ func prepareNoCacheMiddleware(next http.Handler) http.Handler {
 // redirect clients to once authenticated.
 // This is usually the OAuthProxy callback URL.
 func (p *OAuthProxy) getOAuthRedirectURI(req *http.Request) string {
-	// if `p.redirectURL` already has a host, return it
+	// 如果 `p.redirectURL` 已经有主机名，则返回它
 	if p.relativeRedirectURL || p.redirectURL.Host != "" {
 		return p.redirectURL.String()
 	}
 
-	// Otherwise figure out the scheme + host from the request
+	// 否则从请求中计算协议方案 + 主机名
 	rd := *p.redirectURL
 	rd.Host = requestutil.GetRequestHost(req)
 	rd.Scheme = requestutil.GetRequestProto(req)
 
-	// If there's no scheme in the request, we should still include one
+	// 如果请求中没有协议方案，我们仍应包含一个
 	if rd.Scheme == "" {
 		rd.Scheme = schemeHTTP
 	}
 
-	// If CookieSecure is true, return `https` no matter what
-	// Not all reverse proxies set X-Forwarded-Proto
+	// 如果 CookieSecure 为 true，无论如何都返回 `https`
+	// 并非所有反向代理都会设置 X-Forwarded-Proto
 	if p.CookieOptions.Secure {
 		rd.Scheme = schemeHTTPS
 	}
@@ -1112,7 +1110,7 @@ func (p *OAuthProxy) getOAuthRedirectURI(req *http.Request) string {
 func (p *OAuthProxy) getAuthenticatedSession(rw http.ResponseWriter, req *http.Request) (*sessionsapi.SessionState, error) {
 	session := middlewareapi.GetRequestScope(req).Session
 
-	// Check this after loading the session so that if a valid session exists, we can add headers from it
+	// 加载会话后检查此项，以便如果存在有效会话，我们可以从中添加标头
 	if p.IsAllowedRequest(req) {
 		return session, nil
 	}
@@ -1134,7 +1132,7 @@ func (p *OAuthProxy) getAuthenticatedSession(rw http.ResponseWriter, req *http.R
 		}
 
 		logger.PrintAuthf(session.Email, req, logger.AuthFailure, "Invalid authorization via session (%s): removing session %s", cause, session)
-		// Invalid session, clear it
+		// 无效会话，清除它
 		err := p.ClearSessionCookie(rw, req)
 		if err != nil {
 			logger.Errorf("Error clearing session cookie: %v", err)
@@ -1148,7 +1146,7 @@ func (p *OAuthProxy) getAuthenticatedSession(rw http.ResponseWriter, req *http.R
 // authOnlyAuthorize handles special authorization logic that is only done
 // on the AuthOnly endpoint for use with Nginx subrequest architectures.
 func authOnlyAuthorize(req *http.Request, s *sessionsapi.SessionState) bool {
-	// Allow requests previously allowed to be bypassed
+	// 允许先前允许被绕过的请求
 	if s == nil {
 		return true
 	}
@@ -1289,11 +1287,11 @@ func (p *OAuthProxy) addHeadersForProxying(rw http.ResponseWriter, session *sess
 func isAjax(req *http.Request) bool {
 	acceptValues := req.Header.Values("Accept")
 	const ajaxReq = applicationJSON
-	// Iterate over multiple Accept headers, i.e.
+	// 遍历多个 Accept 标头，例如：
 	// Accept: application/json
 	// Accept: text/plain
 	for _, mimeTypes := range acceptValues {
-		// Iterate over multiple mimetypes in a single header, i.e.
+		// 遍历单个标头中的多个 MIME 类型，例如：
 		// Accept: application/json, text/plain, */*
 		for _, mimeType := range strings.Split(mimeTypes, ",") {
 			mimeType = strings.TrimSpace(mimeType)
@@ -1309,8 +1307,7 @@ func isAjax(req *http.Request) bool {
 func (p *OAuthProxy) errorJSON(rw http.ResponseWriter, code int) {
 	rw.Header().Set("Content-Type", applicationJSON)
 	rw.WriteHeader(code)
-	// we need to send some JSON response because we set the Content-Type to
-	// application/json
+	// 我们需要发送一些 JSON 响应，因为我们设置了 Content-Type 为 application/json
 	rw.Write([]byte("{}"))
 }
 

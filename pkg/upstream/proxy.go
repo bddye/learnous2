@@ -17,8 +17,7 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/util/ptr"
 )
 
-// ProxyErrorHandler is a function that will be used to render error pages when
-// HTTP proxies fail to connect to upstream servers.
+// ProxyErrorHandler 是一个函数，当 HTTP 代理无法连接到上游服务器时，将用于渲染错误页面。
 type ProxyErrorHandler func(http.ResponseWriter, *http.Request, error)
 
 // NewProxy creates a new multiUpstreamProxy that can serve requests directed to
@@ -62,8 +61,7 @@ func NewProxy(upstreams options.UpstreamConfig, sigData *options.SignatureData, 
 	return m, nil
 }
 
-// multiUpstreamProxy will serve requests directed to multiple upstream servers
-// registered in the serverMux.
+// multiUpstreamProxy 将处理导向在 serverMux 中注册的多个上游服务器的请求。
 type multiUpstreamProxy struct {
 	serveMux *mux.Router
 }
@@ -91,7 +89,7 @@ func (m *multiUpstreamProxy) registerHTTPUpstreamProxy(upstream options.Upstream
 	return m.registerHandler(upstream, newHTTPUpstreamProxy(upstream, u, sigData, writer.ProxyErrorHandler), writer)
 }
 
-// registerHandler ensures the given handler is regiestered with the serveMux.
+// registerHandler 确保给定的处理程序已在 serveMux 中注册。
 func (m *multiUpstreamProxy) registerHandler(upstream options.Upstream, handler http.Handler, writer pagewriter.Writer) error {
 	if upstream.RewriteTarget == "" {
 		m.registerSimpleHandler(upstream.Path, handler)
@@ -111,10 +109,8 @@ func (m *multiUpstreamProxy) registerSimpleHandler(path string, handler http.Han
 	}
 }
 
-// registerRewriteHandler ensures the handler is registered for all paths
-// which match the regex defined in the Path.
-// Requests to the handler will have the request path rewritten before the
-// request is made to the next handler.
+// registerRewriteHandler 确保处理程序为匹配 Path 中定义的正则表达式的所有路径注册。
+// 在向下一个处理程序发出请求之前，请求路径将被重写。
 func (m *multiUpstreamProxy) registerRewriteHandler(upstream options.Upstream, handler http.Handler, writer pagewriter.Writer) error {
 	rewriteRegExp, err := regexp.Compile(upstream.Path)
 	if err != nil {
@@ -140,9 +136,8 @@ func registerTrailingSlashHandler(serveMux *mux.Router) {
 			return false
 		}
 
-		// Use a separate RouteMatch so that we can redirect to the path + /.
-		// If we pass through the match then the matched backed will be served
-		// instead of the redirect handler.
+		// 使用单独的 RouteMatch，以便我们可以重定向到路径 + /。
+		// 如果我们通过匹配，那么将提供匹配的后端而不是重定向处理程序。
 		m := &mux.RouteMatch{}
 		slashReq := req.Clone(context.Background())
 		slashReq.URL.Path += "/"
@@ -152,12 +147,11 @@ func registerTrailingSlashHandler(serveMux *mux.Router) {
 	}))
 }
 
-// sortByPathLongest ensures that the upstreams are sorted by longest path.
-// If rewrites are involved, a rewrite takes precedence over a non-rewrite.
-// When two upstreams define rewrites, whichever has the longest path will take
-// precedence (note this is the input to the rewrite logic).
-// This does not account for when a rewrite would actually make the path shorter.
-// This should maintain the sorting behaviour of the standard go serve mux.
+// sortByPathLongest 确保上游服务器按最长路径排序。
+// 如果涉及重写，重写优先于非重写。
+// 当两个上游都定义了重写时，路径较长者优先（注意这是重写逻辑的输入）。
+// 这没有考虑重写实际上使路径变短的情况。
+// 这应保持标准 Go serve mux 的排序行为。
 func sortByPathLongest(in []options.Upstream) []options.Upstream {
 	sort.Slice(in, func(i, j int) bool {
 		iRW := in[i].RewriteTarget
@@ -165,17 +159,16 @@ func sortByPathLongest(in []options.Upstream) []options.Upstream {
 
 		switch {
 		case iRW != "" && jRW != "":
-			// If both have a rewrite target, whichever has the longest pattern
-			// should go first
+			// 如果两者都有重写目标，则模式最长者优先
 			return len(in[i].Path) > len(in[j].Path)
 		case iRW != "" && jRW == "":
-			// Only one has rewrite, it goes first
+			// 只有一个有重写，它优先
 			return true
 		case iRW == "" && jRW != "":
-			// Only one has rewrite, it goes first
+			// 只有一个有重写，它优先
 			return false
 		default:
-			// Default to longest Path wins
+			// 默认为最长路径获胜
 			return len(in[i].Path) > len(in[j].Path)
 		}
 	})
