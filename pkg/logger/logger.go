@@ -16,10 +16,10 @@ import (
 	requestutil "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/requests/util"
 )
 
-// AuthStatus defines the different types of auth logging that occur
+// AuthStatus 定义了发生的各种不同类型的身份验证日志记录。
 type AuthStatus string
 
-// Level indicates the log level for log messages
+// Level 表示日志消息的日志级别。
 type Level int
 
 const (
@@ -89,14 +89,12 @@ type reqLogMessageData struct {
 	Username string
 }
 
-// Returns the apparent "real client IP" as a string.
+// GetClientFunc 以字符串形式返回明显的“真实客户端 IP”。
 type GetClientFunc = func(r *http.Request) string
 
-// A Logger represents an active logging object that generates lines of
-// output to an io.Writer passed through a formatter. Each logging
-// operation makes a single call to the Writer's Write method. A Logger
-// can be used simultaneously from multiple goroutines; it guarantees to
-// serialize access to the Writer.
+// Logger 表示一个活动的日志记录对象，它通过格式化程序向 io.Writer 生成多行输出。
+// 每次日志记录操作都会对 Writer 的 Write 方法进行一次调用。
+// Logger 可以在多个 goroutine 中同时使用；它保证对 Writer 的访问是串行化的。
 type Logger struct {
 	mu             sync.Mutex
 	flag           int
@@ -112,7 +110,7 @@ type Logger struct {
 	reqTemplate    *template.Template
 }
 
-// New creates a new Standarderr Logger.
+// New 创建一个新的标准错误 Logger。
 func New(flag int) *Logger {
 	return &Logger{
 		writer:         os.Stdout,
@@ -157,8 +155,8 @@ func (l *Logger) formatLogMessage(calldepth int, message string) []byte {
 	return logBuff.Bytes()
 }
 
-// Output a standard log template with a simple message to default output channel.
-// Write a final newline at the end of every message.
+// Output 向默认输出通道输出一个包含简单消息的标准日志模板。
+// 在每条消息末尾写入一个换行符。
 func (l *Logger) Output(lvl Level, calldepth int, message string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -179,9 +177,8 @@ func (l *Logger) Output(lvl Level, calldepth int, message string) {
 	}
 }
 
-// PrintAuthf writes auth info to the logger. Requires an http.Request to
-// log request details. Remaining arguments are handled in the manner of
-// fmt.Sprintf. Writes a final newline to the end of every message.
+// PrintAuthf 将身份验证信息写入日志记录器。需要一个 http.Request 来记录请求详情。
+// 其余参数的处理方式与 fmt.Sprintf 相同。在每条消息末尾写入一个换行符。
 func (l *Logger) PrintAuthf(username string, req *http.Request, status AuthStatus, format string, a ...interface{}) {
 	if !l.authEnabled {
 		return
@@ -221,9 +218,8 @@ func (l *Logger) PrintAuthf(username string, req *http.Request, status AuthStatu
 	}
 }
 
-// PrintReq writes request details to the Logger using the http.Request,
-// url, and timestamp of the request.  Writes a final newline to the end
-// of every message.
+// PrintReq 使用请求的 http.Request、URL 和时间戳将请求详细信息写入 Logger。
+// 在每条消息末尾写入一个换行符。
 func (l *Logger) PrintReq(username, upstream string, req *http.Request, url url.URL, ts time.Time, status int, size int) {
 	if !l.reqEnabled {
 		return
@@ -280,9 +276,7 @@ func (l *Logger) PrintReq(username, upstream string, req *http.Request, url url.
 	}
 }
 
-// GetFileLineString will find the caller file and line number
-// taking in to account the calldepth to iterate up the stack
-// to find the non-logging call location.
+// GetFileLineString 将找到调用者的文件和行号，并考虑到调用深度以在堆栈中向上迭代，从而找到非日志记录调用位置。
 func (l *Logger) GetFileLineString(calldepth int) string {
 	var file string
 	var line int
@@ -308,7 +302,7 @@ func (l *Logger) GetFileLineString(calldepth int) string {
 	return fmt.Sprintf("%s:%d", file, line)
 }
 
-// FormatTimestamp returns a formatted timestamp.
+// FormatTimestamp 返回格式化后的时间戳。
 func (l *Logger) FormatTimestamp(ts time.Time) string {
 	if l.flag&LUTC != 0 {
 		ts = ts.UTC()
@@ -317,28 +311,28 @@ func (l *Logger) FormatTimestamp(ts time.Time) string {
 	return ts.Format("2006/01/02 15:04:05")
 }
 
-// Flags returns the output flags for the logger.
+// Flags 返回日志记录器的输出标志。
 func (l *Logger) Flags() int {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.flag
 }
 
-// SetFlags sets the output flags for the logger.
+// SetFlags 设置日志记录器的输出标志。
 func (l *Logger) SetFlags(flag int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.flag = flag
 }
 
-// SetStandardEnabled enables or disables standard logging.
+// SetStandardEnabled 启用或禁用标准日志记录。
 func (l *Logger) SetStandardEnabled(e bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.stdEnabled = e
 }
 
-// SetErrToInfo enables or disables error logging to error writer instead of the default.
+// SetErrToInfo 启用或禁用向错误写入器而不是默认写入器的错误日志记录。
 func (l *Logger) SetErrToInfo(e bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -349,28 +343,28 @@ func (l *Logger) SetErrToInfo(e bool) {
 	}
 }
 
-// SetAuthEnabled enables or disables auth logging.
+// SetAuthEnabled 启用或禁用身份验证日志记录。
 func (l *Logger) SetAuthEnabled(e bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.authEnabled = e
 }
 
-// SetReqEnabled enabled or disables request logging.
+// SetReqEnabled 启用或禁用请求日志记录。
 func (l *Logger) SetReqEnabled(e bool) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.reqEnabled = e
 }
 
-// SetGetClientFunc sets the function which determines the apparent "real client IP".
+// SetGetClientFunc 设置用于确定明显“真实客户端 IP”的函数。
 func (l *Logger) SetGetClientFunc(f GetClientFunc) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.getClientFunc = f
 }
 
-// SetExcludePaths sets the paths to exclude from logging.
+// SetExcludePaths 设置要从日志记录中排除的路径。
 func (l *Logger) SetExcludePaths(s []string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -380,21 +374,21 @@ func (l *Logger) SetExcludePaths(s []string) {
 	}
 }
 
-// SetStandardTemplate sets the template for standard logging.
+// SetStandardTemplate 设置标准日志记录的模板。
 func (l *Logger) SetStandardTemplate(t string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.stdLogTemplate = template.Must(template.New("std-log").Parse(t))
 }
 
-// SetAuthTemplate sets the template for auth logging.
+// SetAuthTemplate 设置身份验证日志记录的模板。
 func (l *Logger) SetAuthTemplate(t string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.authTemplate = template.Must(template.New("auth-log").Parse(t))
 }
 
-// SetReqTemplate sets the template for request logging.
+// SetReqTemplate 设置请求日志记录的模板。
 func (l *Logger) SetReqTemplate(t string) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -403,170 +397,162 @@ func (l *Logger) SetReqTemplate(t string) {
 
 // These functions utilize the standard logger.
 
-// FormatTimestamp returns a formatted timestamp for the standard logger.
+// FormatTimestamp 为标准日志记录器返回格式化后的时间戳。
 func FormatTimestamp(ts time.Time) string {
 	return std.FormatTimestamp(ts)
 }
 
-// Flags returns the output flags for the standard logger.
+// Flags 返回标准日志记录器的输出标志。
 func Flags() int {
 	return std.Flags()
 }
 
-// SetFlags sets the output flags for the standard logger.
+// SetFlags 设置标准日志记录器的输出标志。
 func SetFlags(flag int) {
 	std.SetFlags(flag)
 }
 
-// SetOutput sets the output destination for the standard logger's default channel.
+// SetOutput 设置标准日志记录器默认通道的输出目标。
 func SetOutput(w io.Writer) {
 	std.mu.Lock()
 	defer std.mu.Unlock()
 	std.writer = w
 }
 
-// SetErrOutput sets the output destination for the standard logger's error channel.
+// SetErrOutput 设置标准日志记录器错误通道的输出目标。
 func SetErrOutput(w io.Writer) {
 	std.mu.Lock()
 	defer std.mu.Unlock()
 	std.errWriter = w
 }
 
-// SetStandardEnabled enables or disables standard logging for the
-// standard logger.
+// SetStandardEnabled 启用或禁用标准日志记录器的标准日志记录。
 func SetStandardEnabled(e bool) {
 	std.SetStandardEnabled(e)
 }
 
-// SetErrToInfo enables or disables error logging to output writer instead of
-// error writer.
+// SetErrToInfo 启用或禁用向输出写入器而不是错误写入器的错误日志记录。
 func SetErrToInfo(e bool) {
 	std.SetErrToInfo(e)
 }
 
-// SetAuthEnabled enables or disables auth logging for the standard
-// logger.
+// SetAuthEnabled 启用或禁用标准日志记录器的身份验证日志记录。
 func SetAuthEnabled(e bool) {
 	std.SetAuthEnabled(e)
 }
 
-// SetReqEnabled enables or disables request logging for the
-// standard logger.
+// SetReqEnabled 启用或禁用标准日志记录器的请求日志记录。
 func SetReqEnabled(e bool) {
 	std.SetReqEnabled(e)
 }
 
-// SetGetClientFunc sets the function which determines the apparent IP address
-// set by a reverse proxy for the standard logger.
+// SetGetClientFunc 为标准日志记录器设置用于确定由反向代理设置的明显 IP 地址的函数。
 func SetGetClientFunc(f GetClientFunc) {
 	std.SetGetClientFunc(f)
 }
 
-// SetExcludePaths sets the path to exclude from logging, eg: health checks
+// SetExcludePaths 设置要从日志记录中排除的路径，例如：健康检查。
 func SetExcludePaths(s []string) {
 	std.SetExcludePaths(s)
 }
 
-// SetStandardTemplate sets the template for standard logging for
-// the standard logger.
+// SetStandardTemplate 为标准日志记录器设置标准日志记录的模板。
 func SetStandardTemplate(t string) {
 	std.SetStandardTemplate(t)
 }
 
-// SetAuthTemplate sets the template for auth logging for the
-// standard logger.
+// SetAuthTemplate 为标准日志记录器设置身份验证日志记录的模板。
 func SetAuthTemplate(t string) {
 	std.SetAuthTemplate(t)
 }
 
-// SetReqTemplate sets the template for request logging for the
-// standard logger.
+// SetReqTemplate 为标准日志记录器设置请求日志记录的模板。
 func SetReqTemplate(t string) {
 	std.SetReqTemplate(t)
 }
 
-// Print calls Output to print to the standard logger.
-// Arguments are handled in the manner of fmt.Print.
+// Print 调用 Output 以打印到标准日志记录器。
+// 参数的处理方式与 fmt.Print 相同。
 func Print(v ...interface{}) {
 	std.Output(DEFAULT, 2, fmt.Sprint(v...))
 }
 
-// Printf calls Output to print to the standard logger.
-// Arguments are handled in the manner of fmt.Printf.
+// Printf 调用 Output 以打印到标准日志记录器。
+// 参数的处理方式与 fmt.Printf 相同。
 func Printf(format string, v ...interface{}) {
 	std.Output(DEFAULT, 2, fmt.Sprintf(format, v...))
 }
 
-// Println calls Output to print to the standard logger.
-// Arguments are handled in the manner of fmt.Println.
+// Println 调用 Output 以打印到标准日志记录器。
+// 参数的处理方式与 fmt.Println 相同。
 func Println(v ...interface{}) {
 	std.Output(DEFAULT, 2, fmt.Sprintln(v...))
 }
 
-// Error calls OutputErr to print to the standard logger's error channel.
-// Arguments are handled in the manner of fmt.Print.
+// Error 调用 Output 以打印到标准日志记录器的错误通道。
+// 参数的处理方式与 fmt.Print 相同。
 func Error(v ...interface{}) {
 	std.Output(ERROR, 2, fmt.Sprint(v...))
 }
 
-// Errorf calls OutputErr to print to the standard logger's error channel.
-// Arguments are handled in the manner of fmt.Printf.
+// Errorf 调用 Output 以打印到标准日志记录器的错误通道。
+// 参数的处理方式与 fmt.Printf 相同。
 func Errorf(format string, v ...interface{}) {
 	std.Output(ERROR, 2, fmt.Sprintf(format, v...))
 }
 
-// Errorln calls OutputErr to print to the standard logger's error channel.
-// Arguments are handled in the manner of fmt.Println.
+// Errorln 调用 Output 以打印到标准日志记录器的错误通道。
+// 参数的处理方式与 fmt.Println 相同。
 func Errorln(v ...interface{}) {
 	std.Output(ERROR, 2, fmt.Sprintln(v...))
 }
 
-// Fatal is equivalent to Print() followed by a call to os.Exit(1).
+// Fatal 等同于 Print() 之后调用 os.Exit(1)。
 func Fatal(v ...interface{}) {
 	std.Output(ERROR, 2, fmt.Sprint(v...))
 	os.Exit(1)
 }
 
-// Fatalf is equivalent to Printf() followed by a call to os.Exit(1).
+// Fatalf 等同于 Printf() 之后调用 os.Exit(1)。
 func Fatalf(format string, v ...interface{}) {
 	std.Output(ERROR, 2, fmt.Sprintf(format, v...))
 	os.Exit(1)
 }
 
-// Fatalln is equivalent to Println() followed by a call to os.Exit(1).
+// Fatalln 等同于 Println() 之后调用 os.Exit(1)。
 func Fatalln(v ...interface{}) {
 	std.Output(ERROR, 2, fmt.Sprintln(v...))
 	os.Exit(1)
 }
 
-// Panic is equivalent to Print() followed by a call to panic().
+// Panic 等同于 Print() 之后调用 panic()。
 func Panic(v ...interface{}) {
 	s := fmt.Sprint(v...)
 	std.Output(ERROR, 2, s)
 	panic(s)
 }
 
-// Panicf is equivalent to Printf() followed by a call to panic().
+// Panicf 等同于 Printf() 之后调用 panic()。
 func Panicf(format string, v ...interface{}) {
 	s := fmt.Sprintf(format, v...)
 	std.Output(ERROR, 2, s)
 	panic(s)
 }
 
-// Panicln is equivalent to Println() followed by a call to panic().
+// Panicln 等同于 Println() 之后调用 panic()。
 func Panicln(v ...interface{}) {
 	s := fmt.Sprintln(v...)
 	std.Output(ERROR, 2, s)
 	panic(s)
 }
 
-// PrintAuthf writes authentication details to the standard logger.
-// Arguments are handled in the manner of fmt.Printf.
+// PrintAuthf 将身份验证详情写入标准日志记录器。
+// 参数的处理方式与 fmt.Printf 相同。
 func PrintAuthf(username string, req *http.Request, status AuthStatus, format string, a ...interface{}) {
 	std.PrintAuthf(username, req, status, format, a...)
 }
 
-// PrintReq writes request details to the standard logger.
+// PrintReq 将请求详情写入标准日志记录器。
 func PrintReq(username, upstream string, req *http.Request, url url.URL, ts time.Time, status int, size int) {
 	std.PrintReq(username, upstream, req, url, ts, status, size)
 }

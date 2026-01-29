@@ -19,7 +19,7 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/util"
 )
 
-// AzureProvider represents an Azure based Identity Provider
+// AzureProvider 代表基于 Azure 的身份提供者。
 type AzureProvider struct {
 	*ProviderData
 	Tenant          string
@@ -58,7 +58,7 @@ var (
 	}
 )
 
-// NewAzureProvider initiates a new AzureProvider
+// NewAzureProvider 初始化一个新的 AzureProvider。
 func NewAzureProvider(p *ProviderData, opts options.AzureOptions) *AzureProvider {
 	p.setProviderDefaults(providerDefaults{
 		name:        azureProviderName,
@@ -114,6 +114,7 @@ func NewAzureProvider(p *ProviderData, opts options.AzureOptions) *AzureProvider
 	}
 }
 
+// overrideTenantURL 根据租户覆盖默认 URL。
 func overrideTenantURL(current, defaultURL *url.URL, tenant, path string) {
 	if current == nil || current.String() == "" || current.String() == defaultURL.String() {
 		*current = url.URL{
@@ -123,6 +124,7 @@ func overrideTenantURL(current, defaultURL *url.URL, tenant, path string) {
 	}
 }
 
+// getMicrosoftGraphGroupsURL 构造用于获取 Microsoft Graph 分组的 URL。
 func getMicrosoftGraphGroupsURL(profileURL *url.URL, graphGroupField string) *url.URL {
 
 	selectStatement := "$select=displayName,id"
@@ -139,6 +141,7 @@ func getMicrosoftGraphGroupsURL(profileURL *url.URL, graphGroupField string) *ur
 	}
 }
 
+// GetLoginURL 获取用于启动 OAuth2 流程的登录 URL。
 func (p *AzureProvider) GetLoginURL(redirectURI, state, _ string, extraParams url.Values) string {
 	// In azure oauth v2 there is no resource param so add it only if V1 endpoint
 	// https://docs.microsoft.com/en-us/azure/active-directory/azuread-dev/azure-ad-endpoint-comparison#scopes-not-resources
@@ -149,7 +152,7 @@ func (p *AzureProvider) GetLoginURL(redirectURI, state, _ string, extraParams ur
 	return a.String()
 }
 
-// Redeem exchanges the OAuth2 authentication token for an ID token
+// Redeem 使用 OAuth2 身份验证令牌交换 ID 令牌。
 func (p *AzureProvider) Redeem(ctx context.Context, redirectURL, code, codeVerifier string) (*sessions.SessionState, error) {
 	params, err := p.prepareRedeem(redirectURL, code, codeVerifier)
 	if err != nil {
@@ -192,7 +195,7 @@ func (p *AzureProvider) Redeem(ctx context.Context, redirectURL, code, codeVerif
 	return session, nil
 }
 
-// EnrichSession enriches the session state with userID, mail and groups
+// EnrichSession 使用用户 ID、邮件和分组信息丰富会话状态。
 func (p *AzureProvider) EnrichSession(ctx context.Context, session *sessions.SessionState) error {
 	err := p.extractClaimsIntoSession(ctx, session)
 
@@ -219,6 +222,7 @@ func (p *AzureProvider) EnrichSession(ctx context.Context, session *sessions.Ses
 	return nil
 }
 
+// prepareRedeem 准备用于兑换令牌的参数。
 func (p *AzureProvider) prepareRedeem(redirectURL, code, codeVerifier string) (url.Values, error) {
 	params := url.Values{}
 	if code == "" {
@@ -247,8 +251,7 @@ func (p *AzureProvider) prepareRedeem(redirectURL, code, codeVerifier string) (u
 	return params, nil
 }
 
-// extractClaimsIntoSession tries to extract email and groups claims from either id_token or access token
-// when oidc verifier is configured
+// extractClaimsIntoSession 尝试从 id_token 或访问令牌中提取电子邮件和分组声明。
 func (p *AzureProvider) extractClaimsIntoSession(ctx context.Context, session *sessions.SessionState) error {
 
 	var s *sessions.SessionState
@@ -279,7 +282,7 @@ func (p *AzureProvider) extractClaimsIntoSession(ctx context.Context, session *s
 	return nil
 }
 
-// verifySessionToken tries to validate id_token if present or access token when oidc verifier is configured
+// verifySessionToken 尝试验证 id_token（如果存在）或访问令牌。
 func (p *AzureProvider) verifySessionToken(ctx context.Context, session *sessions.SessionState) error {
 	// Without a verifier there's no way to verify
 	if p.Verifier == nil {
@@ -299,7 +302,7 @@ func (p *AzureProvider) verifySessionToken(ctx context.Context, session *session
 	return nil
 }
 
-// RefreshSession uses the RefreshToken to fetch new Access and ID Tokens
+// RefreshSession 使用刷新令牌获取新的访问令牌和 ID 令牌。
 func (p *AzureProvider) RefreshSession(ctx context.Context, s *sessions.SessionState) (bool, error) {
 	if s == nil || s.RefreshToken == "" {
 		return false, nil
@@ -313,6 +316,7 @@ func (p *AzureProvider) RefreshSession(ctx context.Context, s *sessions.SessionS
 	return true, nil
 }
 
+// redeemRefreshToken 使用刷新令牌兑换新的令牌。
 func (p *AzureProvider) redeemRefreshToken(ctx context.Context, s *sessions.SessionState) error {
 	clientSecret, err := p.GetClientSecret()
 	if err != nil {
@@ -363,6 +367,7 @@ func makeAzureHeader(accessToken string) http.Header {
 	return makeAuthorizationHeader(tokenTypeBearer, accessToken, nil)
 }
 
+// getGroupsFromProfileAPI 从 Profile API 获取用户分组。
 func (p *AzureProvider) getGroupsFromProfileAPI(ctx context.Context, s *sessions.SessionState) ([]string, error) {
 	if s.AccessToken == "" {
 		return nil, fmt.Errorf("missing access token")
@@ -398,6 +403,7 @@ func (p *AzureProvider) getGroupsFromProfileAPI(ctx context.Context, s *sessions
 	return groups, nil
 }
 
+// getGroupsFromJSON 从 JSON 响应中提取分组信息。
 func getGroupsFromJSON(json *simplejson.Json, graphGroupField string) []string {
 	//nolint:prealloc
 	groups := []string{}
@@ -410,6 +416,7 @@ func getGroupsFromJSON(json *simplejson.Json, graphGroupField string) []string {
 	return groups
 }
 
+// getEmailFromProfileAPI 从 Profile API 获取用户电子邮件。
 func (p *AzureProvider) getEmailFromProfileAPI(ctx context.Context, accessToken string) (string, error) {
 	if accessToken == "" {
 		return "", fmt.Errorf("missing access token")
@@ -431,6 +438,7 @@ func (p *AzureProvider) getEmailFromProfileAPI(ctx context.Context, accessToken 
 	return email, nil
 }
 
+// getEmailFromJSON 从 JSON 响应中提取电子邮件。
 func getEmailFromJSON(json *simplejson.Json) (string, error) {
 	email, err := json.Get("mail").String()
 
@@ -453,7 +461,7 @@ func getEmailFromJSON(json *simplejson.Json) (string, error) {
 	return email, nil
 }
 
-// ValidateSession validates the AccessToken
+// ValidateSession 验证访问令牌。
 func (p *AzureProvider) ValidateSession(ctx context.Context, s *sessions.SessionState) bool {
 	return validateToken(ctx, p, s.AccessToken, makeAzureHeader(s.AccessToken))
 }

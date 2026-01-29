@@ -46,10 +46,9 @@ type StoredSessionLoaderOptions struct {
 	ValidateSession func(context.Context, *sessionsapi.SessionState) bool
 }
 
-// NewStoredSessionLoader creates a new storedSessionLoader which loads
-// sessions from the session store.
-// If no session is found, the request will be passed to the nex handler.
-// If a session was loader by a previous handler, it will not be replaced.
+// NewStoredSessionLoader 创建一个新的 storedSessionLoader，用于从会话存储中加载会话。
+// 如果未找到会话，请求将传递给下一个处理器。
+// 如果会话是由先前的处理器加载的，它将不会被替换。
 func NewStoredSessionLoader(opts *StoredSessionLoaderOptions) alice.Constructor {
 	ss := &storedSessionLoader{
 		store:            opts.SessionStore,
@@ -60,8 +59,7 @@ func NewStoredSessionLoader(opts *StoredSessionLoaderOptions) alice.Constructor 
 	return ss.loadSession
 }
 
-// storedSessionLoader is responsible for loading sessions from cookie
-// identified sessions in the session store.
+// storedSessionLoader 负责从会话存储中加载由 Cookie 标识的会话。
 type storedSessionLoader struct {
 	store            sessionsapi.SessionStore
 	refreshPeriod    time.Duration
@@ -69,9 +67,9 @@ type storedSessionLoader struct {
 	sessionValidator func(context.Context, *sessionsapi.SessionState) bool
 }
 
-// loadSession attempts to load a session as identified by the request cookies.
-// If no session is found, the request will be passed to the next handler.
-// If a session was loader by a previous handler, it will not be replaced.
+// loadSession 尝试加载由请求 Cookie 标识的会话。
+// 如果未找到会话，请求将传递给下一个处理器。
+// 如果会话是由先前的处理器加载的，它将不会被替换。
 func (s *storedSessionLoader) loadSession(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		scope := middlewareapi.GetRequestScope(req)
@@ -99,8 +97,7 @@ func (s *storedSessionLoader) loadSession(next http.Handler) http.Handler {
 	})
 }
 
-// getValidatedSession is responsible for loading a session and making sure
-// that it is valid.
+// getValidatedSession 负责加载会话并确保其有效。
 func (s *storedSessionLoader) getValidatedSession(rw http.ResponseWriter, req *http.Request) (*sessionsapi.SessionState, error) {
 	session, err := s.store.Load(req)
 	if err != nil || session == nil {
@@ -116,9 +113,8 @@ func (s *storedSessionLoader) getValidatedSession(rw http.ResponseWriter, req *h
 	return session, nil
 }
 
-// refreshSessionIfNeeded will attempt to refresh a session if the session
-// is older than the refresh period.
-// Success or fail, we will then validate the session.
+// refreshSessionIfNeeded 如果会话比刷新周期旧，将尝试刷新会话。
+// 无论成功或失败，我们随后都会验证会话。
 func (s *storedSessionLoader) refreshSessionIfNeeded(rw http.ResponseWriter, req *http.Request, session *sessionsapi.SessionState) error {
 	if !needsRefresh(s.refreshPeriod, session) {
 		// 刷新已禁用或会话不够旧，不执行任何操作
@@ -189,13 +185,12 @@ func (s *storedSessionLoader) refreshSessionIfNeeded(rw http.ResponseWriter, req
 	return s.validateSession(req.Context(), session)
 }
 
-// needsRefresh determines whether we should attempt to refresh a session or not.
+// needsRefresh 确定我们是否应该尝试刷新会话。
 func needsRefresh(refreshPeriod time.Duration, session *sessionsapi.SessionState) bool {
 	return refreshPeriod > time.Duration(0) && session.Age() > refreshPeriod
 }
 
-// refreshSession attempts to refresh the session with the provider
-// and will save the session if it was updated.
+// refreshSession 尝试向提供者刷新会话，并在会话更新后保存它。
 func (s *storedSessionLoader) refreshSession(rw http.ResponseWriter, req *http.Request, session *sessionsapi.SessionState) error {
 	refreshed, err := s.sessionRefresher(req.Context(), session)
 	if err != nil && !errors.Is(err, providers.ErrNotImplemented) {
@@ -230,9 +225,8 @@ func (s *storedSessionLoader) refreshSession(rw http.ResponseWriter, req *http.R
 	return nil
 }
 
-// validateSession checks whether the session has expired and performs
-// provider validation on the session.
-// An error implies the session is not longer valid.
+// validateSession 检查会话是否已过期，并对会话执行提供者验证。
+// 错误意味着会话不再有效。
 func (s *storedSessionLoader) validateSession(ctx context.Context, session *sessionsapi.SessionState) error {
 	if session.IsExpired() {
 		return errors.New("session is expired")

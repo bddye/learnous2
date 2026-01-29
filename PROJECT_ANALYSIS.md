@@ -50,6 +50,8 @@ OAuth2 Proxy 是一个反向代理和身份验证库，旨在为现有的 Web �
 
 ## 关键流程解析
 
+关于更详细的身份验证时序和函数调用流，请参阅：[AUTHENTICATION_FLOW.md](AUTHENTICATION_FLOW.md)
+
 1. **启动流程**: `main.go` 加载配置 -> `validation` 验证配置 -> `NewOAuthProxy` 初始化核心组件 -> `oauthproxy.Start()` 启动监听。
 2. **身份验证流程**:
     - 用户访问受保护资源。

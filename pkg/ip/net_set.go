@@ -5,22 +5,21 @@ import (
 	"net"
 )
 
-// Fast lookup table for intersection of a single IP address within a collection of CIDR networks.
+// NetSet 是用于在 CIDR 网络集合中快速查找单个 IP 地址是否相交的查找表。
 //
-// Supports 4-byte (IPv4) and 16-byte (IPv6) networks.
+// 支持 4 字节（IPv4）和 16 字节（IPv6）网络。
 //
-// Provides O(1) best-case, O(log(n)) worst-case performance.
-// In practice netmasks included will generally only be of standard lengths:
-// - /8, /16, /24, and /32 for IPv4
-// - /64 and /128 for IPv6.
-// As a result, typical lookup times will lean closer to best-case rather than worst-case even when most of the internet
-// is included.
+// 提供最佳情况 O(1)，最坏情况 O(log(n)) 的性能。
+// 实际上，包含的网络掩码通常只有标准长度：
+// - IPv4 的 /8, /16, /24 和 /32
+// - IPv6 的 /64 和 /128。
+// 因此，即使包含了大部分互联网，典型的查找时间也会更接近最佳情况而不是最坏情况。
 type NetSet struct {
 	ip4NetMaps []ipNetMap
 	ip6NetMaps []ipNetMap
 }
 
-// Create a new NetSet with all of the provided networks.
+// NewNetSet 使用所有提供的网络创建一个新的 NetSet。
 func NewNetSet() *NetSet {
 	return &NetSet{
 		ip4NetMaps: make([]ipNetMap, 0),
@@ -28,7 +27,7 @@ func NewNetSet() *NetSet {
 	}
 }
 
-// Check if `ip` is in the set, true if within the set otherwise false.
+// Has 检查 `ip` 是否在集合中，如果在集合中则为 true，否则为 false。
 func (w *NetSet) Has(ip net.IP) bool {
 	netMaps := w.getNetMaps(ip)
 
@@ -41,7 +40,7 @@ func (w *NetSet) Has(ip net.IP) bool {
 	return false
 }
 
-// Add an CIDR network to the set.
+// AddIPNet 向集合中添加一个 CIDR 网络。
 func (w *NetSet) AddIPNet(ipNet net.IPNet) {
 	netMaps := w.getNetMaps(ipNet.IP)
 
@@ -74,7 +73,7 @@ func (w *NetSet) AddIPNet(ipNet net.IPNet) {
 	netMap.ips[ipNet.IP.String()] = true
 }
 
-// Get the appropriate array of networks for the given IP version.
+// getNetMaps 获取给定 IP 版本的适当网络数组。
 func (w *NetSet) getNetMaps(ip net.IP) (netMaps *[]ipNetMap) {
 	switch {
 	case ip.To4() != nil:
@@ -88,13 +87,13 @@ func (w *NetSet) getNetMaps(ip net.IP) (netMaps *[]ipNetMap) {
 	return netMaps
 }
 
-// Hash-set of CIDR networks with the same mask size.
+// ipNetMap 具有相同掩码大小的 CIDR 网络的哈希集。
 type ipNetMap struct {
 	mask net.IPMask
 	ips  map[string]bool
 }
 
-// Check if the IP is in any of the CIDR networks contained in this map.
+// has 检查 IP 是否在此映射包含的任何 CIDR 网络中。
 func (m ipNetMap) has(ip net.IP) bool {
 	// Apply the mask to the IP to remove any irrelevant bits in the IP.
 	ipMasked := ip.Mask(m.mask)

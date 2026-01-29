@@ -24,8 +24,7 @@ const (
 	oidcUserClaim = "sub"
 )
 
-// ProviderData contains information required to configure all implementations
-// of OAuth2 providers
+// ProviderData 包含配置所有 OAuth2 提供者实现所需的信息。
 type ProviderData struct {
 	ProviderName      string
 	LoginURL          *url.URL
@@ -63,9 +62,10 @@ type ProviderData struct {
 	BackendLogoutURL string
 }
 
-// Data returns the ProviderData
+// Data 返回 ProviderData。
 func (p *ProviderData) Data() *ProviderData { return p }
 
+// GetClientSecret 获取提供者的客户端密钥。
 func (p *ProviderData) GetClientSecret() (clientSecret string, err error) {
 	if p.ClientSecret != "" || p.ClientSecretFile == "" {
 		return p.ClientSecret, nil
@@ -80,10 +80,9 @@ func (p *ProviderData) GetClientSecret() (clientSecret string, err error) {
 	return string(fileClientSecret), nil
 }
 
-// LoginURLParams returns the parameter values that should be passed to the IdP
-// login URL.  This is the default set of parameters configured for this provider,
-// optionally overridden by the given overrides (typically from the URL of the
-// /oauth2/start request) according to the configured rules for this provider.
+// LoginURLParams 返回应传递给 IdP 登录 URL 的参数值。
+// 这是为此提供者配置的默认参数集，
+// 可根据为此提供者配置的规则通过给定的覆盖（通常来自 /oauth2/start 请求的 URL）进行可选覆盖。
 func (p *ProviderData) LoginURLParams(overrides url.Values) url.Values {
 	// the returned url.Values may be modified later in the request handling process
 	// so shallow clone the default map
@@ -110,8 +109,7 @@ func (p *ProviderData) LoginURLParams(overrides url.Values) url.Values {
 	return params
 }
 
-// Compile the given set of LoginURLParameter options into the internal defaults
-// and regular expressions used to validate any overrides.
+// compileLoginParams 将给定的一组 LoginURLParameter 选项编译为内部默认值和用于验证任何覆盖的正则表达式。
 func (p *ProviderData) compileLoginParams(paramConfig []options.LoginURLParameter) []error {
 	var errs []error
 	p.loginURLParameterDefaults = url.Values{}
@@ -134,8 +132,7 @@ func (p *ProviderData) compileLoginParams(paramConfig []options.LoginURLParamete
 	return errs
 }
 
-// Converts the list of allow rules for the given parameter into a regexp
-// and store it for use at runtime when validating overrides of that parameter.
+// convertAllowRules 将给定参数的允许规则列表转换为正则表达式，并存储它以便在运行时验证该参数的覆盖。
 func (p *ProviderData) convertAllowRules(errs []error, param options.LoginURLParameter) []error {
 	var allowREs []string
 	for idx, rule := range param.Allow {
@@ -153,16 +150,15 @@ func (p *ProviderData) convertAllowRules(errs []error, param options.LoginURLPar
 	return errs
 }
 
-// Check whether we have already processed a configuration for the given parameter name
+// seenParameter 检查我们是否已经处理了给定参数名称的配置。
 func (p *ProviderData) seenParameter(name string) bool {
 	_, seenDefault := p.loginURLParameterDefaults[name]
 	_, seenOverride := p.loginURLParameterOverrides[name]
 	return seenDefault || seenOverride
 }
 
-// Generate a validating regular expression pattern for a given URLParameterRule.
-// If the rule is for a fixed value then returns a regexp that matches exactly
-// that value, if the rule is itself a regexp just use that as-is.
+// regexpForRule 为给定的 URLParameterRule 生成验证正则表达式模式。
+// 如果规则是固定值，则返回精确匹配该值的正则表达式，如果规则本身是正则表达式，则按原样使用。
 func regexpForRule(rule options.URLParameterRule) string {
 	if rule.Value != nil {
 		// convert literal value into an equivalent regexp,
@@ -174,8 +170,7 @@ func regexpForRule(rule options.URLParameterRule) string {
 	return "(?:" + *rule.Pattern + ")"
 }
 
-// setAllowedGroups organizes a group list into the AllowedGroups map
-// to be consumed by Authorize implementations
+// setAllowedGroups 将分组列表组织到 AllowedGroups 映射中，供 Authorize 实现使用。
 func (p *ProviderData) setAllowedGroups(groups []string) {
 	p.AllowedGroups = make(map[string]struct{}, len(groups))
 	for _, group := range groups {
@@ -192,6 +187,7 @@ type providerDefaults struct {
 	scope       string
 }
 
+// setProviderDefaults 设置提供者的默认值。
 func (p *ProviderData) setProviderDefaults(defaults providerDefaults) {
 	p.ProviderName = defaults.name
 	p.LoginURL = defaultURL(p.LoginURL, defaults.loginURL)
@@ -208,7 +204,7 @@ func (p *ProviderData) setProviderDefaults(defaults providerDefaults) {
 	}
 }
 
-// defaultURL will set return a default value if the given value is not set.
+// defaultURL 如果未设置给定值，则返回默认值。
 func defaultURL(u *url.URL, d *url.URL) *url.URL {
 	if u != nil && u.String() != "" {
 		// The value is already set
@@ -227,6 +223,7 @@ func defaultURL(u *url.URL, d *url.URL) *url.URL {
 // OIDC compliant
 // ****************************************************************************
 
+// verifyIDToken 使用提供者的验证器验证 ID 令牌。
 func (p *ProviderData) verifyIDToken(ctx context.Context, token *oauth2.Token) (*oidc.IDToken, error) {
 	rawIDToken := getIDToken(token)
 	if strings.TrimSpace(rawIDToken) == "" {
@@ -238,8 +235,7 @@ func (p *ProviderData) verifyIDToken(ctx context.Context, token *oauth2.Token) (
 	return p.Verifier.Verify(ctx, rawIDToken)
 }
 
-// buildSessionFromClaims uses IDToken claims to populate a fresh SessionState
-// with non-Token related fields.
+// buildSessionFromClaims 使用 IDToken 声明填充一个新的 SessionState，包含与令牌无关的字段。
 func (p *ProviderData) buildSessionFromClaims(rawIDToken, accessToken string) (*sessions.SessionState, error) {
 	ss := &sessions.SessionState{}
 
@@ -287,6 +283,7 @@ func (p *ProviderData) buildSessionFromClaims(rawIDToken, accessToken string) (*
 	return ss, nil
 }
 
+// getClaimExtractor 获取一个声明提取器。
 func (p *ProviderData) getClaimExtractor(rawIDToken, accessToken string) (util.ClaimExtractor, error) {
 	profileURL := p.ProfileURL
 	if p.SkipClaimsFromProfileURL {
@@ -301,7 +298,7 @@ func (p *ProviderData) getClaimExtractor(rawIDToken, accessToken string) (util.C
 	return extractor, nil
 }
 
-// checkNonce compares the session's nonce with the IDToken's nonce claim
+// checkNonce 将会话的 nonce 与 IDToken 的 nonce 声明进行比较。
 func (p *ProviderData) checkNonce(s *sessions.SessionState) error {
 	extractor, err := p.getClaimExtractor(s.IDToken, "")
 	if err != nil {
@@ -318,6 +315,7 @@ func (p *ProviderData) checkNonce(s *sessions.SessionState) error {
 	return nil
 }
 
+// getAuthorizationHeader 返回授权标头。
 func (p *ProviderData) getAuthorizationHeader(accessToken string) http.Header {
 	if p.getAuthorizationHeaderFunc != nil && accessToken != "" {
 		return p.getAuthorizationHeaderFunc(accessToken)

@@ -9,6 +9,7 @@ import (
 	ipapi "github.com/oauth2-proxy/oauth2-proxy/v7/pkg/apis/ip"
 )
 
+// GetRealClientIPParser 根据给定的标头键返回一个 RealClientIPParser。
 func GetRealClientIPParser(headerKey string) (ipapi.RealClientIPParser, error) {
 	headerKey = http.CanonicalHeaderKey(headerKey)
 
@@ -26,16 +27,17 @@ func GetRealClientIPParser(headerKey string) (ipapi.RealClientIPParser, error) {
 	return nil, fmt.Errorf("the http header key (%s) is either invalid or unsupported", headerKey)
 }
 
+// xForwardedForClientIPParser 实现了 RealClientIPParser 接口，用于解析 X-Forwarded-For 类型的标头。
 type xForwardedForClientIPParser struct {
 	header string
 }
 
-// GetRealClientIP obtain the IP address of the end-user (not proxy).
-// Parses headers sharing the format as specified by:
-// * https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-For.
-// Returns the `<client>` portion specified in the above document.
-// Additionally, is capable of parsing IPs with the port included, for v4 in the format "<ip>:<port>" and for v6 in the
-// format "[<ip>]:<port>".  With-port and without-port formats are seamlessly supported concurrently.
+// GetRealClientIP 获取最终用户的 IP 地址（非代理）。
+// 解析格式如以下文档指定的标头：
+// * https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-For。
+// 返回上述文档中指定的 `<client>` 部分。
+// 此外，能够解析包含端口的 IP，对于 v4 格式为 "<ip>:<port>"，对于 v6 格式为 "[<ip>]:<port>"。
+// 同时无缝支持有端口和无端口格式。
 func (p xForwardedForClientIPParser) GetRealClientIP(h http.Header) (net.IP, error) {
 	var ipStr string
 	if realIP := h.Get(p.header); realIP != "" {
@@ -63,7 +65,7 @@ func (p xForwardedForClientIPParser) GetRealClientIP(h http.Header) (net.IP, err
 	return ip, nil
 }
 
-// GetClientIP obtains the perceived end-user IP address from headers if p != nil else from req.RemoteAddr.
+// GetClientIP 如果 p != nil，则从标头中获取感知到的最终用户 IP 地址，否则从 req.RemoteAddr 获取。
 func GetClientIP(p ipapi.RealClientIPParser, req *http.Request) (net.IP, error) {
 	if p != nil {
 		return p.GetRealClientIP(req.Header)
@@ -71,7 +73,7 @@ func GetClientIP(p ipapi.RealClientIPParser, req *http.Request) (net.IP, error) 
 	return getRemoteIP(req)
 }
 
-// getRemoteIP obtains the IP of the low-level connected network host
+// getRemoteIP 获取底层连接网络主机的 IP。
 func getRemoteIP(req *http.Request) (net.IP, error) {
 	//revive:disable:indent-error-flow
 	if ipStr, _, err := net.SplitHostPort(req.RemoteAddr); err != nil {
@@ -84,7 +86,7 @@ func getRemoteIP(req *http.Request) (net.IP, error) {
 	//revive:enable:indent-error-flow
 }
 
-// GetClientString obtains the human readable string of the remote IP and optionally the real client IP if available
+// GetClientString 获取远程 IP 的人类可读字符串，如果可用，还可以选择获取真实客户端 IP。
 func GetClientString(p ipapi.RealClientIPParser, req *http.Request, full bool) (s string) {
 	var realClientIPStr string
 	if p != nil {
