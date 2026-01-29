@@ -26,7 +26,8 @@ type Provider interface {
 	GetLoginURL(redirectURI, finalRedirect, nonce string, extraParams url.Values) string
 	// Redeem 使用授权码交换访问令牌和/或身份令牌。
 	Redeem(ctx context.Context, redirectURI, code, codeVerifier string) (*sessions.SessionState, error)
-	// GetEmailAddress 已弃用：请迁移至 EnrichSession。获取用户的电子邮件地址。
+	// GetEmailAddress 获取用户的电子邮件地址。
+	//
 	// Deprecated: Migrate to EnrichSession
 	GetEmailAddress(ctx context.Context, s *sessions.SessionState) (string, error)
 	// EnrichSession 使用来自提供者的额外信息（如电子邮件、分组）丰富会话状态。
