@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+// ParseIPNet 将字符串解析为 net.IPNet 指针。
+// 它支持 CIDR 表示法和普通的 IP 地址表示法。
 func ParseIPNet(s string) *net.IPNet {
 	if !strings.ContainsRune(s, '/') {
 		ip := net.ParseIP(s)

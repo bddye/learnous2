@@ -18,7 +18,7 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/requests"
 )
 
-// GitHubProvider represents an GitHub based Identity Provider
+// GitHubProvider 代表基于 GitHub 的身份提供者。
 type GitHubProvider struct {
 	*ProviderData
 	Org   string
@@ -64,7 +64,7 @@ var (
 	}
 )
 
-// NewGitHubProvider initiates a new GitHubProvider
+// NewGitHubProvider 初始化一个新的 GitHubProvider。
 func NewGitHubProvider(p *ProviderData, opts options.GitHubOptions) *GitHubProvider {
 	p.setProviderDefaults(providerDefaults{
 		name:        githubProviderName,
@@ -83,6 +83,7 @@ func NewGitHubProvider(p *ProviderData, opts options.GitHubOptions) *GitHubProvi
 	return provider
 }
 
+// makeGitHubHeader 创建 GitHub API 请求所需的标头。
 func makeGitHubHeader(accessToken string) http.Header {
 	// extra headers required by the GitHub API when making authenticated requests
 	extraHeaders := map[string]string{
@@ -91,6 +92,7 @@ func makeGitHubHeader(accessToken string) http.Header {
 	return makeAuthorizationHeader(tokenTypeToken, accessToken, extraHeaders)
 }
 
+// makeGitHubAPIEndpoint 构造 GitHub API 端点 URL。
 func (p *GitHubProvider) makeGitHubAPIEndpoint(endpoint string, params *url.Values) *url.URL {
 	basePath := p.ValidateURL.Path
 
@@ -112,24 +114,24 @@ func (p *GitHubProvider) makeGitHubAPIEndpoint(endpoint string, params *url.Valu
 	}
 }
 
-// setOrgTeam adds GitHub org reading parameters to the OAuth2 scope
+// setOrgTeam 设置 GitHub 组织和团队参数。
 func (p *GitHubProvider) setOrgTeam(org, team string) {
 	p.Org = org
 	p.Team = team
 }
 
-// setRepo configures the target repository and optional token to use
+// setRepo 配置目标存储库和可选的令牌。
 func (p *GitHubProvider) setRepo(repo, token string) {
 	p.Repo = repo
 	p.Token = token
 }
 
-// setUsers configures allowed usernames
+// setUsers 配置允许的用户名列表。
 func (p *GitHubProvider) setUsers(users []string) {
 	p.Users = users
 }
 
-// EnrichSession updates the User & Email after the initial Redeem
+// EnrichSession 在初始 Redeem 后更新用户和电子邮件信息。
 func (p *GitHubProvider) EnrichSession(ctx context.Context, s *sessions.SessionState) error {
 	// Construct user info JSON from multiple GitHub API endpoints to have a more detailed session state
 	if err := p.getOrgAndTeam(ctx, s); err != nil {
@@ -147,11 +149,12 @@ func (p *GitHubProvider) EnrichSession(ctx context.Context, s *sessions.SessionS
 	return p.getUser(ctx, s)
 }
 
-// ValidateSession validates the AccessToken
+// ValidateSession 验证访问令牌。
 func (p *GitHubProvider) ValidateSession(ctx context.Context, s *sessions.SessionState) bool {
 	return validateToken(ctx, p, s.AccessToken, makeGitHubHeader(s.AccessToken))
 }
 
+// hasOrg 检查用户是否属于所需的组织。
 func (p *GitHubProvider) hasOrg(s *sessions.SessionState) error {
 	// https://developer.github.com/v3/orgs/#list-your-organizations
 	var orgs []string
@@ -175,6 +178,7 @@ func (p *GitHubProvider) hasOrg(s *sessions.SessionState) error {
 	return errors.New("user is missing required organization")
 }
 
+// hasOrgAndTeam 检查用户是否属于所需的组织和团队。
 func (p *GitHubProvider) hasOrgAndTeam(s *sessions.SessionState) error {
 	type orgTeam struct {
 		Org  string `json:"org"`
@@ -221,6 +225,7 @@ func (p *GitHubProvider) hasOrgAndTeam(s *sessions.SessionState) error {
 	return errors.New("user is missing required organization")
 }
 
+// hasTeam 检查用户是否属于所需的团队。
 func (p *GitHubProvider) hasTeam(s *sessions.SessionState) error {
 	var teams []string
 
@@ -252,6 +257,7 @@ func (p *GitHubProvider) hasTeam(s *sessions.SessionState) error {
 	return errors.New("user is missing required team")
 }
 
+// hasRepoAccess 检查用户是否具有存储库访问权限。
 func (p *GitHubProvider) hasRepoAccess(ctx context.Context, accessToken string) error {
 	// https://developer.github.com/v3/repos/#get-a-repository
 
@@ -287,6 +293,7 @@ func (p *GitHubProvider) hasRepoAccess(ctx context.Context, accessToken string) 
 	return errors.New("user doesn't have repository access")
 }
 
+// hasUser 检查用户是否在允许的用户列表中。
 func (p *GitHubProvider) hasUser(ctx context.Context, accessToken string) (bool, error) {
 	// https://developer.github.com/v3/users/#get-the-authenticated-user
 
@@ -312,6 +319,7 @@ func (p *GitHubProvider) hasUser(ctx context.Context, accessToken string) (bool,
 	return false, nil
 }
 
+// isCollaborator 检查用户是否是存储库的协作者。
 func (p *GitHubProvider) isCollaborator(ctx context.Context, username, accessToken string) (bool, error) {
 	//https://developer.github.com/v3/repos/collaborators/#check-if-a-user-is-a-collaborator
 
@@ -334,7 +342,7 @@ func (p *GitHubProvider) isCollaborator(ctx context.Context, username, accessTok
 	return true, nil
 }
 
-// getEmail updates the SessionState Email
+// getEmail 更新 SessionState 中的电子邮件。
 func (p *GitHubProvider) getEmail(ctx context.Context, s *sessions.SessionState) error {
 
 	var emails []struct {
@@ -366,7 +374,7 @@ func (p *GitHubProvider) getEmail(ctx context.Context, s *sessions.SessionState)
 	return nil
 }
 
-// getUser updates the SessionState User
+// getUser 更新 SessionState 中的用户。
 func (p *GitHubProvider) getUser(ctx context.Context, s *sessions.SessionState) error {
 	var user struct {
 		Login string `json:"login"`
@@ -395,6 +403,7 @@ func (p *GitHubProvider) getUser(ctx context.Context, s *sessions.SessionState) 
 	return nil
 }
 
+// isVerifiedUser 检查用户名是否在允许列表中。
 func (p *GitHubProvider) isVerifiedUser(username string) bool {
 	for _, u := range p.Users {
 		if username == u {
@@ -404,6 +413,7 @@ func (p *GitHubProvider) isVerifiedUser(username string) bool {
 	return false
 }
 
+// checkRestrictions 检查用户是否满足配置的限制（组织、团队、存储库）。
 func (p *GitHubProvider) checkRestrictions(ctx context.Context, s *sessions.SessionState) error {
 	// If a user is verified by username options, skip the following restrictions
 	if ok, err := p.checkUserRestriction(ctx, s); err != nil || ok {
@@ -432,6 +442,7 @@ func (p *GitHubProvider) checkRestrictions(ctx context.Context, s *sessions.Sess
 	return nil
 }
 
+// checkUserRestriction 检查用户是否满足用户名限制。
 func (p *GitHubProvider) checkUserRestriction(ctx context.Context, s *sessions.SessionState) (bool, error) {
 	if len(p.Users) == 0 {
 		return false, nil
@@ -450,6 +461,7 @@ func (p *GitHubProvider) checkUserRestriction(ctx context.Context, s *sessions.S
 	return verifiedUser, nil
 }
 
+// getOrgAndTeam 获取用户的组织和团队信息。
 func (p *GitHubProvider) getOrgAndTeam(ctx context.Context, s *sessions.SessionState) error {
 	err := p.getOrgs(ctx, s)
 	if err != nil {
@@ -459,6 +471,7 @@ func (p *GitHubProvider) getOrgAndTeam(ctx context.Context, s *sessions.SessionS
 	return p.getTeams(ctx, s)
 }
 
+// getOrgs 获取用户所属的组织。
 func (p *GitHubProvider) getOrgs(ctx context.Context, s *sessions.SessionState) error {
 
 	type Organization struct {
@@ -511,6 +524,7 @@ func (p *GitHubProvider) getOrgs(ctx context.Context, s *sessions.SessionState) 
 	return nil
 }
 
+// getTeams 获取用户所属的团队。
 func (p *GitHubProvider) getTeams(ctx context.Context, s *sessions.SessionState) error {
 	// https://docs.github.com/en/rest/teams/teams?#list-user-teams
 	type Team struct {

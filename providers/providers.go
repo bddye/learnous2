@@ -18,20 +18,31 @@ const (
 	CodeChallengeMethodS256  = "S256"
 )
 
-// Provider represents an upstream identity provider implementation
+// Provider 代表上游身份提供者的实现。
 type Provider interface {
+	// Data 返回提供者的基础数据。
 	Data() *ProviderData
+	// GetLoginURL 获取用于启动 OAuth2 流程的登录 URL。
 	GetLoginURL(redirectURI, finalRedirect, nonce string, extraParams url.Values) string
+	// Redeem 使用授权码交换访问令牌和/或身份令牌。
 	Redeem(ctx context.Context, redirectURI, code, codeVerifier string) (*sessions.SessionState, error)
+	// GetEmailAddress 获取用户的电子邮件地址。
+	//
 	// Deprecated: Migrate to EnrichSession
 	GetEmailAddress(ctx context.Context, s *sessions.SessionState) (string, error)
+	// EnrichSession 使用来自提供者的额外信息（如电子邮件、分组）丰富会话状态。
 	EnrichSession(ctx context.Context, s *sessions.SessionState) error
+	// Authorize 检查用户是否有权访问基于其会话状态的内容。
 	Authorize(ctx context.Context, s *sessions.SessionState) (bool, error)
+	// ValidateSession 检查会话是否仍然有效。
 	ValidateSession(ctx context.Context, s *sessions.SessionState) bool
+	// RefreshSession 使用刷新令牌更新会话。
 	RefreshSession(ctx context.Context, s *sessions.SessionState) (bool, error)
+	// CreateSessionFromToken 从给定的令牌创建会话状态。
 	CreateSessionFromToken(ctx context.Context, token string) (*sessions.SessionState, error)
 }
 
+// NewProvider 根据提供的配置创建一个新的 Provider 实例。
 func NewProvider(providerConfig options.Provider) (Provider, error) {
 	providerData, err := newProviderDataFromConfig(providerConfig)
 	if err != nil {
@@ -77,6 +88,7 @@ func NewProvider(providerConfig options.Provider) (Provider, error) {
 	}
 }
 
+// newProviderDataFromConfig 从选项配置中初始化 ProviderData。
 func newProviderDataFromConfig(providerConfig options.Provider) (*ProviderData, error) {
 	p := &ProviderData{
 		Scope:                   providerConfig.Scope,
@@ -173,9 +185,8 @@ func newProviderDataFromConfig(providerConfig options.Provider) (*ProviderData, 
 	return p, nil
 }
 
-// Pick the most appropriate code challenge method for PKCE
-// At this time we do not consider what the server supports to be safe and
-// only enable PKCE if the user opts-in
+// parseCodeChallengeMethod 为 PKCE 选择最合适的代码挑战方法。
+// 目前我们不考虑服务器支持什么以确保安全，仅在用户选择加入时启用 PKCE。
 func parseCodeChallengeMethod(providerConfig options.Provider) string {
 	switch {
 	case providerConfig.CodeChallengeMethod != "":
@@ -185,6 +196,7 @@ func parseCodeChallengeMethod(providerConfig options.Provider) string {
 	}
 }
 
+// providerRequiresOIDCProviderVerifier 检查指定的提供者类型是否需要 OIDC 提供者验证器。
 func providerRequiresOIDCProviderVerifier(providerType options.ProviderType) (bool, error) {
 	switch providerType {
 	case options.BitbucketProvider, options.DigitalOceanProvider, options.FacebookProvider, options.GitHubProvider,

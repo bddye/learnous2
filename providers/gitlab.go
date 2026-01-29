@@ -19,7 +19,7 @@ const (
 	gitlabProjectPrefix = "project:"
 )
 
-// GitLabProvider represents a GitLab based Identity Provider
+// GitLabProvider 代表基于 GitLab 的身份提供者。
 type GitLabProvider struct {
 	*OIDCProvider
 
@@ -30,7 +30,7 @@ type GitLabProvider struct {
 
 var _ Provider = (*GitLabProvider)(nil)
 
-// NewGitLabProvider initiates a new GitLabProvider
+// NewGitLabProvider 初始化一个新的 GitLabProvider。
 func NewGitLabProvider(p *ProviderData, opts options.Provider) (*GitLabProvider, error) {
 	p.setProviderDefaults(providerDefaults{
 		name: gitlabProviderName,
@@ -55,8 +55,7 @@ func NewGitLabProvider(p *ProviderData, opts options.Provider) (*GitLabProvider,
 	return provider, nil
 }
 
-// setAllowedProjects adds Gitlab projects to the AllowedGroups list
-// and tracks them to do a project API lookup during `EnrichSession`.
+// setAllowedProjects 将 GitLab 项目添加到 AllowedGroups 列表，并跟踪它们以便在 EnrichSession 期间进行项目 API 查找。
 func (p *GitLabProvider) setAllowedProjects(projects []string) error {
 	for _, project := range projects {
 		gp, err := newGitlabProject(project)
@@ -72,15 +71,14 @@ func (p *GitLabProvider) setAllowedProjects(projects []string) error {
 	return nil
 }
 
-// gitlabProject represents a Gitlab project constraint entity
+// gitlabProject 代表一个 GitLab 项目约束实体。
 type gitlabProject struct {
 	Name        string
 	AccessLevel int
 }
 
-// newGitlabProject Creates a new GitlabProject struct from project string
-// formatted as `namespace/project=accesslevel`
-// if no accesslevel provided, use the default one
+// newGitlabProject 从格式为 `namespace/project=accesslevel` 的项目字符串创建一个新的 gitlabProject 结构。
+// 如果未提供访问级别，则使用默认值。
 func newGitlabProject(project string) (*gitlabProject, error) {
 	const defaultAccessLevel = 20
 	// see https://docs.gitlab.com/ee/api/members.html#valid-access-levels
@@ -109,7 +107,7 @@ func newGitlabProject(project string) (*gitlabProject, error) {
 	}, nil
 }
 
-// setProjectScope ensures read_api is added to scope when filtering on projects
+// setProjectScope 确保在按项目过滤时将 read_api 添加到 scope。
 func (p *GitLabProvider) setProjectScope() {
 	for _, val := range strings.Split(p.Scope, " ") {
 		if val == "read_api" {
@@ -119,8 +117,7 @@ func (p *GitLabProvider) setProjectScope() {
 	p.Scope += " read_api"
 }
 
-// EnrichSession enriches the session with the response from the userinfo API
-// endpoint & projects API endpoint for allowed projects.
+// EnrichSession 使用来自 userinfo API 端点和允许项目的 projects API 端点的响应丰富会话。
 func (p *GitLabProvider) EnrichSession(ctx context.Context, s *sessions.SessionState) error {
 	// Retrieve user info
 	userinfo, err := p.getUserinfo(ctx, s)
@@ -156,6 +153,7 @@ type gitlabUserinfo struct {
 	Groups        []string `json:"groups"`
 }
 
+// getUserinfo 从 GitLab 获取用户信息。
 func (p *GitLabProvider) getUserinfo(ctx context.Context, s *sessions.SessionState) (*gitlabUserinfo, error) {
 	// Retrieve user info JSON
 	// https://docs.gitlab.com/ee/integration/openid_connect_provider.html#shared-information
@@ -177,9 +175,8 @@ func (p *GitLabProvider) getUserinfo(ctx context.Context, s *sessions.SessionSta
 	return &userinfo, nil
 }
 
-// addProjectsToSession adds projects matching user access requirements into
-// the session state groups list.
-// This method prefixes projects names with `project:` to specify group kind.
+// addProjectsToSession 将符合用户访问要求的项目添加到会话状态的分组列表中。
+// 此方法在项目名称前加上 `project:` 前缀以指定分组类型。
 func (p *GitLabProvider) addProjectsToSession(ctx context.Context, s *sessions.SessionState) {
 	// Iterate over projects, check if oauth2-proxy can get project information on behalf of the user
 	for _, project := range p.allowedProjects {
@@ -235,6 +232,7 @@ type gitlabProjectInfo struct {
 	Permissions       gitlabProjectPermission `json:"permissions"`
 }
 
+// getProjectInfo 从 GitLab API 获取项目信息。
 func (p *GitLabProvider) getProjectInfo(ctx context.Context, s *sessions.SessionState, project string) (*gitlabProjectInfo, error) {
 	var projectInfo gitlabProjectInfo
 
@@ -256,12 +254,12 @@ func (p *GitLabProvider) getProjectInfo(ctx context.Context, s *sessions.Session
 	return &projectInfo, nil
 }
 
+// formatProject 格式化项目名称以包含 `project:` 前缀。
 func formatProject(project *gitlabProject) string {
 	return gitlabProjectPrefix + project.Name
 }
 
-// RefreshSession refreshes the session with the OIDCProvider implementation
-// but preserves the custom GitLab projects added in the `EnrichSession` stage.
+// RefreshSession 使用 OIDCProvider 实现刷新会话，但保留在 EnrichSession 阶段添加的自定义 GitLab 项目。
 func (p *GitLabProvider) RefreshSession(ctx context.Context, s *sessions.SessionState) (bool, error) {
 	nickname := s.User
 	projects := getSessionProjects(s)
@@ -276,6 +274,7 @@ func (p *GitLabProvider) RefreshSession(ctx context.Context, s *sessions.Session
 	return refreshed, err
 }
 
+// getSessionProjects 从会话状态中提取以 `project:` 为前缀的项目分组。
 func getSessionProjects(s *sessions.SessionState) []string {
 	var projects []string
 	for _, group := range s.Groups {
@@ -286,6 +285,7 @@ func getSessionProjects(s *sessions.SessionState) []string {
 	return projects
 }
 
+// deduplicateGroups 对分组列表进行去重。
 func deduplicateGroups(groups []string) []string {
 	groupSet := make(map[string]struct{})
 	for _, group := range groups {

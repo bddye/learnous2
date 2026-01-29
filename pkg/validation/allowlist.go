@@ -10,6 +10,7 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/ip"
 )
 
+// validateAllowlists 验证所有允许列表配置（路由、正则、受信任 IP）。
 func validateAllowlists(o *options.Options) []string {
 	//nolint:prealloc
 	msgs := []string{}
@@ -28,7 +29,7 @@ func validateAllowlists(o *options.Options) []string {
 	return msgs
 }
 
-// validateAuthRoutes validates method=path routes passed with options.SkipAuthRoutes
+// validateAuthRoutes 验证通过 options.SkipAuthRoutes 传递的 method=path 路由。
 func validateAuthRoutes(o *options.Options) []string {
 	msgs := []string{}
 	for _, route := range o.SkipAuthRoutes {
@@ -47,12 +48,12 @@ func validateAuthRoutes(o *options.Options) []string {
 	return msgs
 }
 
-// validateAuthRegexes validates regex paths passed with options.SkipAuthRegex
+// validateAuthRegexes 验证通过 options.SkipAuthRegex 传递的正则表达式路径。
 func validateAuthRegexes(o *options.Options) []string {
 	return validateRegexes(o.SkipAuthRegex)
 }
 
-// validateTrustedIPs validates IP/CIDRs for IP based allowlists
+// validateTrustedIPs 验证基于 IP 的允许列表的 IP/CIDR。
 func validateTrustedIPs(o *options.Options) []string {
 	msgs := []string{}
 	for i, ipStr := range o.TrustedIPs {
@@ -63,12 +64,12 @@ func validateTrustedIPs(o *options.Options) []string {
 	return msgs
 }
 
-// validateAPIRoutes validates regex paths passed with options.ApiRoutes
+// validateAPIRoutes 验证通过 options.ApiRoutes 传递的正则表达式路径。
 func validateAPIRoutes(o *options.Options) []string {
 	return validateRegexes(o.APIRoutes)
 }
 
-// validateRegexes validates all regexes and returns a list of messages in case of error
+// validateRegexes 验证所有正则表达式，并在出错时返回消息列表。
 func validateRegexes(regexes []string) []string {
 	msgs := []string{}
 	for _, regex := range regexes {

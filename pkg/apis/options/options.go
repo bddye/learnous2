@@ -9,14 +9,13 @@ import (
 	"github.com/spf13/pflag"
 )
 
-// SignatureData holds hmacauth signature hash and key
+// SignatureData 保存 hmacauth 签名哈希和密钥
 type SignatureData struct {
 	Hash crypto.Hash
 	Key  string
 }
 
-// Options holds Configuration Options that can be set by Command Line Flag,
-// or Config File
+// Options 保存可以通过命令行标志或配置文件设置的配置选项
 type Options struct {
 	ProxyPrefix         string   `flag:"proxy-prefix" cfg:"proxy_prefix"`
 	PingPath            string   `flag:"ping-path" cfg:"ping_path"`
@@ -40,8 +39,8 @@ type Options struct {
 	Logging   Logging        `cfg:",squash"`
 	Templates Templates      `cfg:",squash"`
 
-	// Not used in the legacy config, name not allowed to match an external key (upstreams)
-	// TODO(JoelSpeed): Rename when legacy config is removed
+	// 不在旧版配置中使用，名称不允许与外部键（upstreams）匹配
+	// TODO(JoelSpeed): 在删除旧版配置时重命名
 	UpstreamServers UpstreamConfig `cfg:",internal"`
 
 	InjectRequestHeaders  []Header `cfg:",internal"`
@@ -68,10 +67,10 @@ type Options struct {
 	SignatureKey    string `flag:"signature-key" cfg:"signature_key"`
 	GCPHealthChecks bool   `flag:"gcp-healthchecks" cfg:"gcp_healthchecks"`
 
-	// This is used for backwards compatibility for basic auth users
+	// 这用于基本身份验证用户的向后兼容性
 	LegacyPreferEmailToUser bool `cfg:",internal"`
 
-	// internal values that are set after config validation
+	// 配置验证后设置的内部值
 	redirectURL        *url.URL
 	signatureData      *SignatureData
 	oidcVerifier       internaloidc.IDTokenVerifier
@@ -182,7 +181,7 @@ func (o *Options) EnsureDefaults() {
 		o.InjectResponseHeaders[i].EnsureDefaults()
 	}
 
-	// TBD: Uncomment as we add EnsureDefaults methods
+	// 待定：随着我们添加 EnsureDefaults 方法，取消注释
 	// o.Cookie.EnsureDefaults()
 	// o.Session.EnsureDefaults()
 	// o.Templates.EnsureDefaults()

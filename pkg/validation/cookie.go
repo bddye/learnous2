@@ -11,6 +11,7 @@ import (
 	"github.com/oauth2-proxy/oauth2-proxy/v7/pkg/encryption"
 )
 
+// validateCookie 验证 Cookie 相关的配置选项。
 func validateCookie(o options.Cookie) []string {
 	msgs := validateCookieSecret(o.Secret, o.SecretFile)
 
@@ -36,6 +37,7 @@ func validateCookie(o options.Cookie) []string {
 	return msgs
 }
 
+// validateCookieName 验证 Cookie 名称是否符合 HTTP 规范。
 func validateCookieName(name string) []string {
 	msgs := []string{}
 
@@ -50,6 +52,7 @@ func validateCookieName(name string) []string {
 	return msgs
 }
 
+// validateCookieSecret 验证 Cookie 密钥（来自配置或文件）是否有效（长度应为 16, 24 或 32 字节）。
 func validateCookieSecret(secret string, secretFile string) []string {
 	if secret == "" && secretFile == "" {
 		return []string{"missing setting: cookie-secret or cookie-secret-file"}

@@ -14,6 +14,7 @@ import (
 	"time"
 )
 
+// GetCertPool 根据路径列表加载证书池，并可以选择是否使用系统证书池。
 func GetCertPool(paths []string, useSystemPool bool) (*x509.CertPool, error) {
 	if len(paths) == 0 {
 		return nil, fmt.Errorf("invalid empty list of Root CAs file paths")
@@ -34,6 +35,7 @@ func GetCertPool(paths []string, useSystemPool bool) (*x509.CertPool, error) {
 
 }
 
+// getSystemCertPool 获取系统证书池。
 func getSystemCertPool() (*x509.CertPool, error) {
 	rootPool, err := x509.SystemCertPool()
 	if err != nil {
@@ -47,6 +49,7 @@ func getSystemCertPool() (*x509.CertPool, error) {
 	return rootPool, nil
 }
 
+// loadCertsFromPaths 从指定路径列表加载证书并将其添加到证书池中。
 func loadCertsFromPaths(paths []string, pool *x509.CertPool) (*x509.CertPool, error) {
 	for _, path := range paths {
 		// Cert paths are a configurable option
@@ -61,7 +64,8 @@ func loadCertsFromPaths(paths []string, pool *x509.CertPool) (*x509.CertPool, er
 	return pool, nil
 }
 
-// https://golang.org/src/crypto/tls/generate_cert.go as a function
+// GenerateCert 为给定的 IP 地址生成自签名证书和私钥。
+// 参考：https://golang.org/src/crypto/tls/generate_cert.go
 func GenerateCert(ipaddr string) ([]byte, []byte, error) {
 	var err error
 
@@ -98,10 +102,10 @@ func GenerateCert(ipaddr string) ([]byte, []byte, error) {
 	return certBytes, keyBytes, err
 }
 
-// SplitHostPort separates host and port. If the port is not valid, it returns
-// the entire input as host, and it doesn't check the validity of the host.
-// Unlike net.SplitHostPort, but per RFC 3986, it requires ports to be numeric.
-// *** taken from net/url, modified validOptionalPort() to accept ":*"
+// SplitHostPort 分离主机名和端口。如果端口无效，它将整个输入作为主机名返回。
+// 它不检查主机名的有效性。
+// 与 net.SplitHostPort 不同，它遵循 RFC 3986，要求端口为数字。
+// 摘自 net/url，并修改了 validOptionalPort() 以接受 ":*"。
 func SplitHostPort(hostport string) (host, port string) {
 	host = hostport
 
@@ -117,9 +121,8 @@ func SplitHostPort(hostport string) (host, port string) {
 	return
 }
 
-// validOptionalPort reports whether port is either an empty string
-// or matches /^:\d*$/
-// *** taken from net/url, modified to accept ":*"
+// validOptionalPort 报告端口是否为空字符串或匹配 /^:\d*$/。
+// 摘自 net/url，并修改为接受 ":*"。
 func validOptionalPort(port string) bool {
 	if port == "" || port == ":*" {
 		return true
@@ -135,8 +138,7 @@ func validOptionalPort(port string) bool {
 	return true
 }
 
-// IsEndpointAllowed checks whether the endpoint URL is allowed based
-// on an allowed domains list.
+// IsEndpointAllowed 根据允许的域名列表检查端点 URL 是否被允许。
 func IsEndpointAllowed(endpoint *url.URL, allowedDomains []string) bool {
 	hostname := endpoint.Hostname()
 
@@ -163,6 +165,7 @@ func IsEndpointAllowed(endpoint *url.URL, allowedDomains []string) bool {
 	return false
 }
 
+// isHostnameAllowed 检查主机名是否符合允许的主机名模式。
 func isHostnameAllowed(hostname, allowedHost string) bool {
 	// check if we have a perfect match between hostname and allowedHost
 	if hostname == strings.TrimPrefix(allowedHost, ".") ||
@@ -179,7 +182,7 @@ func isHostnameAllowed(hostname, allowedHost string) bool {
 	return false
 }
 
-// RemoveDuplicateStr removes duplicates from a slice of strings.
+// RemoveDuplicateStr 从字符串切片中移除重复项。
 func RemoveDuplicateStr(strSlice []string) []string {
 	allKeys := make(map[string]struct{})
 	var list []string
